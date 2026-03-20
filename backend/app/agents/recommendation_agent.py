@@ -13,7 +13,7 @@ from app.services.llm_client import get_llm_client
 # =========================
 CATEGORY_KEYWORDS = {
     "手机": ["iphone", "小米", "华为", "oppo", "vivo", "手机"],
-    "笔记本": ["macbook", "笔记本", "laptop", "surface"],
+    "笔记本": ["macbook", "笔记本", "laptop", "surface","电脑"],
     "耳机": ["耳机", "headphones", "wh-1000xm5", "airpods"]
 }
 
@@ -83,6 +83,16 @@ class CategoryEmbedding:
         self.category_names = list(self.category_texts.keys())
         category_texts_merged = [' '.join(texts) for texts in self.category_texts.values()]
         self.category_embeddings = self.model.encode(category_texts_merged, normalize_embeddings=True)
+
+    def classify_query(self, query: str):
+        q_emb = self.model.encode([query], normalize_embeddings=True)[0]
+        sims = np.dot(self.category_embeddings, q_emb)
+        if len(sims) == 0:
+            return None
+        best_idx = np.argmax(sims)
+        if sims[best_idx] > 0.3:
+            return self.category_names[best_idx]
+        return None
 
     def get_scores(self, query):
         q_emb = self.model.encode([query], normalize_embeddings=True)[0]
@@ -187,6 +197,8 @@ class RecommendationAgent:
         # Step1: LLM分类意图
         #intent_category = self.intent_agent.classify_intent(query, self.products)
         intent_category = classify_intent_rule(query)
+        if not intent_category:
+            intent_category = self.category_embedding.classify_query(query)
 
         recalled = self.hybrid_recall(query)
 
