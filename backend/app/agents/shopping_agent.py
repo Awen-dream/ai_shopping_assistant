@@ -1,17 +1,28 @@
-from .recommendation_agent import vector_search, rank_products, generate_reason
+from app.agents.recommendation_agent import RecommendationAgent
 
-def shopping_agent(user_query: str, user_profile: dict):
-    # 1. 检索商品
-    candidates = vector_search(user_query)
-    # 2. 排序
-    ranked = rank_products(candidates, user_profile)
-    # 3. 生成解释
-    recommendations = []
-    for item in ranked[:5]:
-        recommendations.append({
-            "name": item["name"],
-            "price": item["price"],
-            "brand": item["brand"],
-            "reason": generate_reason(item, user_profile)
-        })
-    return recommendations
+
+class ShoppingAgent:
+    def __init__(self):
+        self.recommendation_agent = RecommendationAgent()
+
+    def handle(self, user_query: str, user_profile: dict = None):
+        if user_profile is None:
+            user_profile = {
+                "preferred_brand": [],
+                "budget_range": [0, 999999]
+            }
+
+        # 直接调用 RecommendationAgent
+        results = self.recommendation_agent.recommend(user_query, user_profile)
+
+        # 输出结构化结果（可选精简）
+        recommendations = []
+        for item in results:
+            recommendations.append({
+                "name": item["name"],
+                "price": item["price"],
+                "brand": item.get("brand", ""),
+                "reason": item.get("reason", "")
+            })
+
+        return recommendations

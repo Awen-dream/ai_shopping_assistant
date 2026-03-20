@@ -1,16 +1,19 @@
-from fastapi import APIRouter, Query
-from .agents.shopping_agent import shopping_agent
+from fastapi import APIRouter, Query, UploadFile, File
+from .multi_agent_coordinator import MultiAgentCoordinator
+import shutil, os
 
 router = APIRouter()
+coordinator = MultiAgentCoordinator()
 
-@router.get("/recommend")
-def recommend_products(query: str = Query(..., description="用户查询关键词")):
-    # 示例用户画像
-    user_profile = {
-        "user_id": 1001,
-        "preferred_brand": ["Nike", "Adidas"],
-        "budget_range": [500, 1200],
-        "interests": ["running", "fitness"]
-    }
-    result = shopping_agent(query, user_profile)
-    return {"query": query, "recommendations": result}
+@router.get("/multi-agent-task")
+def query_products(q: str):
+    return coordinator.handle_query(query=q)
+
+@router.post("/multi-agent-task/image")
+def query_by_image(file: UploadFile = File(...)):
+    temp_path = f"/tmp/{file.filename}"
+    with open(temp_path, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+    results = coordinator.handle_query(image_path=temp_path)
+    os.remove(temp_path)
+    return results

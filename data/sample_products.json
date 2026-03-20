@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "name": "iPhone 15 Pro",
+    "description": "轻便好用的旗舰手机，拍照出色",
+    "category": "手机",
+    "brand": "Apple",
+    "price": 6999,
+    "rating": 4.9,
+    "tags": ["轻便", "拍照", "旗舰"]
+  },
+  {
+    "id": 2,
+    "name": "MacBook Air M2",
+    "description": "苹果轻薄笔记本，性能优异，续航出色",
+    "category": "笔记本",
+    "brand": "Apple",
+    "price": 10999,
+    "rating": 4.9,
+    "tags": ["轻薄", "办公", "续航"]
+  },
+  {
+    "id": 3,
+    "name": "Sony WH-1000XM5",
+    "description": "顶级降噪头戴耳机，适合办公和旅行",
+    "category": "耳机",
+    "brand": "Sony",
+    "price": 2899,
+    "rating": 4.9,
+    "tags": ["降噪", "办公", "旅行"]
+  }
+]

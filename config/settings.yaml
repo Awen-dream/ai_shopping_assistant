@@ -1,3 +1,4 @@
 llm_model: "gpt-3.5-turbo"
 embedding_model: "all-MiniLM-L6-v2"
 topk_recommend: 5
+openai_api_key: "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"
