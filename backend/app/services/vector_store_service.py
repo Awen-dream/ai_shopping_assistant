@@ -9,6 +9,7 @@ from app.services.llm_client import (
     get_embedding_model,
     get_vector_index_strategy,
     get_vector_store_backend,
+    get_vector_sync_on_product_change,
     is_vector_auto_build_enabled,
     is_vector_search_enabled,
 )
@@ -205,6 +206,12 @@ def get_runtime_vector_store_override():
     return _RUNTIME_VECTOR_STORE_OVERRIDE
 
 
+def delete_persisted_vector_store_artifacts():
+    for path in [get_product_index_path(), get_product_index_metadata_path()]:
+        if path.exists():
+            path.unlink()
+
+
 def create_vector_store(products: List[dict]) -> BaseVectorStore:
     runtime_override = get_runtime_vector_store_override()
     if runtime_override is not None and _same_products(products, runtime_override.products):
@@ -256,3 +263,28 @@ def rebuild_vector_store(products: List[dict], persist: bool = True) -> dict:
         return DisabledVectorStore(products).status()
 
     raise RuntimeError(f"Vector rebuild is not implemented for backend '{backend}'.")
+
+
+def sync_vector_store_after_product_change(products: List[dict]) -> dict:
+    if not is_vector_search_enabled():
+        set_runtime_vector_store_override(None)
+        return DisabledVectorStore(products).status()
+
+    strategy = get_vector_sync_on_product_change()
+    if strategy in {"persist", "persisted", "disk"}:
+        return rebuild_vector_store(products, persist=True)
+    if strategy in {"runtime", "memory", "volatile"}:
+        return rebuild_vector_store(products, persist=False)
+    if strategy in {"invalidate", "clear"}:
+        set_runtime_vector_store_override(None)
+        delete_persisted_vector_store_artifacts()
+        return {
+            "backend": get_vector_store_backend(),
+            "ready": False,
+            "load_source": "invalidated",
+            "product_count": len(products),
+            "persisted_index_exists": False,
+            "persisted_metadata_exists": False,
+        }
+
+    return rebuild_vector_store(products, persist=True)

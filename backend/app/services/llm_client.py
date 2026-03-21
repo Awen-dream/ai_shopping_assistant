@@ -61,6 +61,10 @@ def is_vector_auto_build_enabled(default: bool = True) -> bool:
     return str(raw_value).strip().lower() in {"1", "true", "yes", "on"}
 
 
+def get_vector_sync_on_product_change(default: str = "persisted") -> str:
+    return str(load_settings().get("vector_sync_on_product_change", default)).strip().lower()
+
+
 @lru_cache(maxsize=1)
 def get_llm_client():
     api_key = load_openai_key()

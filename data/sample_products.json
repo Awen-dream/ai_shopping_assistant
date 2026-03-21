@@ -8,14 +8,28 @@
     "brand": "Apple",
     "price": 6999,
     "rating": 4.9,
-    "tags": ["轻薄", "拍照", "旗舰", "高性能"],
+    "tags": [
+      "轻薄",
+      "拍照",
+      "旗舰",
+      "高性能"
+    ],
     "monthly_sales": 3200,
     "promotion_tag": "以旧换新补贴",
     "inventory_total": 86,
     "warehouses": [
-      {"name": "华东仓", "stock": 28},
-      {"name": "华南仓", "stock": 24},
-      {"name": "华北仓", "stock": 34}
+      {
+        "name": "华东仓",
+        "stock": 28
+      },
+      {
+        "name": "华南仓",
+        "stock": 24
+      },
+      {
+        "name": "华北仓",
+        "stock": 34
+      }
     ]
   },
   {
@@ -27,14 +41,28 @@
     "brand": "Apple",
     "price": 5399,
     "rating": 4.8,
-    "tags": ["拍照", "稳定", "续航", "苹果生态"],
+    "tags": [
+      "拍照",
+      "稳定",
+      "续航",
+      "苹果生态"
+    ],
     "monthly_sales": 4100,
     "promotion_tag": "教育优惠",
     "inventory_total": 112,
     "warehouses": [
-      {"name": "华东仓", "stock": 45},
-      {"name": "西南仓", "stock": 31},
-      {"name": "华北仓", "stock": 36}
+      {
+        "name": "华东仓",
+        "stock": 45
+      },
+      {
+        "name": "西南仓",
+        "stock": 31
+      },
+      {
+        "name": "华北仓",
+        "stock": 36
+      }
     ]
   },
   {
@@ -46,14 +74,28 @@
     "brand": "Xiaomi",
     "price": 3999,
     "rating": 4.7,
-    "tags": ["拍照", "旗舰", "性价比", "轻便"],
+    "tags": [
+      "拍照",
+      "旗舰",
+      "性价比",
+      "轻便"
+    ],
     "monthly_sales": 5300,
     "promotion_tag": "直降 300 元",
     "inventory_total": 143,
     "warehouses": [
-      {"name": "华东仓", "stock": 48},
-      {"name": "华中仓", "stock": 41},
-      {"name": "西南仓", "stock": 54}
+      {
+        "name": "华东仓",
+        "stock": 48
+      },
+      {
+        "name": "华中仓",
+        "stock": 41
+      },
+      {
+        "name": "西南仓",
+        "stock": 54
+      }
     ]
   },
   {
@@ -65,14 +107,28 @@
     "brand": "Huawei",
     "price": 5499,
     "rating": 4.8,
-    "tags": ["拍照", "商务", "高端", "鸿蒙"],
+    "tags": [
+      "拍照",
+      "商务",
+      "高端",
+      "鸿蒙"
+    ],
     "monthly_sales": 2700,
     "promotion_tag": "赠延保服务",
     "inventory_total": 74,
     "warehouses": [
-      {"name": "华南仓", "stock": 24},
-      {"name": "华北仓", "stock": 26},
-      {"name": "西北仓", "stock": 24}
+      {
+        "name": "华南仓",
+        "stock": 24
+      },
+      {
+        "name": "华北仓",
+        "stock": 26
+      },
+      {
+        "name": "西北仓",
+        "stock": 24
+      }
     ]
   },
   {
@@ -84,14 +140,28 @@
     "brand": "Apple",
     "price": 9999,
     "rating": 4.9,
-    "tags": ["轻薄", "办公", "续航", "苹果生态"],
+    "tags": [
+      "轻薄",
+      "办公",
+      "续航",
+      "苹果生态"
+    ],
     "monthly_sales": 2900,
     "promotion_tag": "教育优惠",
     "inventory_total": 61,
     "warehouses": [
-      {"name": "华东仓", "stock": 19},
-      {"name": "华南仓", "stock": 22},
-      {"name": "华北仓", "stock": 20}
+      {
+        "name": "华东仓",
+        "stock": 19
+      },
+      {
+        "name": "华南仓",
+        "stock": 22
+      },
+      {
+        "name": "华北仓",
+        "stock": 20
+      }
     ]
   },
   {
@@ -103,14 +173,28 @@
     "brand": "Dell",
     "price": 8999,
     "rating": 4.7,
-    "tags": ["轻薄", "办公", "商务", "高屏占比"],
+    "tags": [
+      "轻薄",
+      "办公",
+      "商务",
+      "高屏占比"
+    ],
     "monthly_sales": 1300,
     "promotion_tag": "限时满减",
     "inventory_total": 39,
     "warehouses": [
-      {"name": "华东仓", "stock": 13},
-      {"name": "华中仓", "stock": 11},
-      {"name": "华北仓", "stock": 15}
+      {
+        "name": "华东仓",
+        "stock": 13
+      },
+      {
+        "name": "华中仓",
+        "stock": 11
+      },
+      {
+        "name": "华北仓",
+        "stock": 15
+      }
     ]
   },
   {
@@ -122,14 +206,28 @@
     "brand": "Lenovo",
     "price": 5299,
     "rating": 4.6,
-    "tags": ["轻薄", "办公", "学生", "性价比"],
+    "tags": [
+      "轻薄",
+      "办公",
+      "学生",
+      "性价比"
+    ],
     "monthly_sales": 4600,
     "promotion_tag": "国补专区",
     "inventory_total": 153,
     "warehouses": [
-      {"name": "华东仓", "stock": 52},
-      {"name": "华南仓", "stock": 48},
-      {"name": "西南仓", "stock": 53}
+      {
+        "name": "华东仓",
+        "stock": 52
+      },
+      {
+        "name": "华南仓",
+        "stock": 48
+      },
+      {
+        "name": "西南仓",
+        "stock": 53
+      }
     ]
   },
   {
@@ -141,14 +239,28 @@
     "brand": "Lenovo",
     "price": 10999,
     "rating": 4.8,
-    "tags": ["商务", "轻薄", "办公", "耐用"],
+    "tags": [
+      "商务",
+      "轻薄",
+      "办公",
+      "耐用"
+    ],
     "monthly_sales": 980,
     "promotion_tag": "企业采购优惠",
     "inventory_total": 28,
     "warehouses": [
-      {"name": "华东仓", "stock": 8},
-      {"name": "华北仓", "stock": 9},
-      {"name": "华南仓", "stock": 11}
+      {
+        "name": "华东仓",
+        "stock": 8
+      },
+      {
+        "name": "华北仓",
+        "stock": 9
+      },
+      {
+        "name": "华南仓",
+        "stock": 11
+      }
     ]
   },
   {
@@ -160,14 +272,28 @@
     "brand": "Sony",
     "price": 2899,
     "rating": 4.9,
-    "tags": ["降噪", "办公", "旅行", "头戴"],
+    "tags": [
+      "降噪",
+      "办公",
+      "旅行",
+      "头戴"
+    ],
     "monthly_sales": 2500,
     "promotion_tag": "赠收纳包",
     "inventory_total": 64,
     "warehouses": [
-      {"name": "华东仓", "stock": 21},
-      {"name": "华南仓", "stock": 19},
-      {"name": "华北仓", "stock": 24}
+      {
+        "name": "华东仓",
+        "stock": 21
+      },
+      {
+        "name": "华南仓",
+        "stock": 19
+      },
+      {
+        "name": "华北仓",
+        "stock": 24
+      }
     ]
   },
   {
@@ -179,14 +305,28 @@
     "brand": "Apple",
     "price": 1899,
     "rating": 4.8,
-    "tags": ["降噪", "真无线", "通勤", "苹果生态"],
+    "tags": [
+      "降噪",
+      "真无线",
+      "通勤",
+      "苹果生态"
+    ],
     "monthly_sales": 6200,
     "promotion_tag": "会员立减",
     "inventory_total": 172,
     "warehouses": [
-      {"name": "华东仓", "stock": 58},
-      {"name": "华中仓", "stock": 54},
-      {"name": "华北仓", "stock": 60}
+      {
+        "name": "华东仓",
+        "stock": 58
+      },
+      {
+        "name": "华中仓",
+        "stock": 54
+      },
+      {
+        "name": "华北仓",
+        "stock": 60
+      }
     ]
   },
   {
@@ -198,14 +338,28 @@
     "brand": "Bose",
     "price": 3199,
     "rating": 4.7,
-    "tags": ["降噪", "头戴", "旅行", "音质"],
+    "tags": [
+      "降噪",
+      "头戴",
+      "旅行",
+      "音质"
+    ],
     "monthly_sales": 980,
     "promotion_tag": "晒单返券",
     "inventory_total": 33,
     "warehouses": [
-      {"name": "华东仓", "stock": 9},
-      {"name": "华南仓", "stock": 11},
-      {"name": "华北仓", "stock": 13}
+      {
+        "name": "华东仓",
+        "stock": 9
+      },
+      {
+        "name": "华南仓",
+        "stock": 11
+      },
+      {
+        "name": "华北仓",
+        "stock": 13
+      }
     ]
   },
   {
@@ -217,14 +371,28 @@
     "brand": "Xiaomi",
     "price": 399,
     "rating": 4.5,
-    "tags": ["降噪", "真无线", "性价比", "通勤"],
+    "tags": [
+      "降噪",
+      "真无线",
+      "性价比",
+      "通勤"
+    ],
     "monthly_sales": 8800,
     "promotion_tag": "百元神券",
     "inventory_total": 231,
     "warehouses": [
-      {"name": "华东仓", "stock": 80},
-      {"name": "华南仓", "stock": 72},
-      {"name": "西南仓", "stock": 79}
+      {
+        "name": "华东仓",
+        "stock": 80
+      },
+      {
+        "name": "华南仓",
+        "stock": 72
+      },
+      {
+        "name": "西南仓",
+        "stock": 79
+      }
     ]
   }
 ]

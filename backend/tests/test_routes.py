@@ -80,3 +80,37 @@ def test_vector_index_status_endpoint_returns_status():
     assert "backend" in payload
     assert "ready" in payload
     assert "load_source" in payload
+
+
+def test_products_endpoint_returns_catalog():
+    response = client.get("/products")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert "products" in payload
+    assert len(payload["products"]) >= 12
+
+
+def test_create_product_returns_vector_sync_status():
+    response = client.post(
+        "/products",
+        json={
+            "name": "QA Demo Headphones",
+            "description": "用于测试的降噪耳机",
+            "category": "耳机",
+            "subcategory": "头戴耳机",
+            "brand": "Sony",
+            "price": 1999,
+            "rating": 4.6,
+            "tags": ["降噪", "测试"],
+            "monthly_sales": 99,
+            "promotion_tag": "测试活动",
+            "inventory_total": 20,
+            "warehouses": [{"name": "华东仓", "stock": 20}],
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["product"]["name"] == "QA Demo Headphones"
+    assert "vector_status" in payload

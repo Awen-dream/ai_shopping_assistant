@@ -8,9 +8,9 @@ from fastapi import APIRouter, File, Form, Query, UploadFile
 from pydantic import BaseModel
 
 from .multi_agent_coordinator import MultiAgentCoordinator
-from .services.product_service import list_products
+from .services.product_service import create_product, list_products, upsert_product
 from .services.user_profile_service import get_user_profile, upsert_user_profile
-from .services.vector_store_service import rebuild_vector_store
+from .services.vector_store_service import rebuild_vector_store, sync_vector_store_after_product_change
 
 router = APIRouter()
 
@@ -28,6 +28,26 @@ class UserProfilePayload(BaseModel):
     preferred_categories: list[str] | None = None
     price_sensitivity: str | None = None
     city: str | None = None
+
+
+class WarehousePayload(BaseModel):
+    name: str
+    stock: int
+
+
+class ProductPayload(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    category: str | None = None
+    subcategory: str | None = None
+    brand: str | None = None
+    price: float | None = None
+    rating: float | None = None
+    tags: list[str] | None = None
+    monthly_sales: int | None = None
+    promotion_tag: str | None = None
+    inventory_total: int | None = None
+    warehouses: list[WarehousePayload] | None = None
 
 
 @router.get("/multi-agent-task")
@@ -63,6 +83,29 @@ def save_user_profile(user_id: str, payload: UserProfilePayload):
     payload_dict = payload.model_dump(exclude_none=True) if hasattr(payload, "model_dump") else payload.dict(exclude_none=True)
     profile = upsert_user_profile(user_id, payload_dict)
     return {"profile": profile}
+
+
+@router.get("/products")
+def read_products():
+    return {"products": list_products()}
+
+
+@router.post("/products")
+def create_catalog_product(payload: ProductPayload):
+    payload_dict = payload.model_dump(exclude_none=True) if hasattr(payload, "model_dump") else payload.dict(exclude_none=True)
+    product = create_product(payload_dict)
+    sync_status = sync_vector_store_after_product_change(list_products())
+    get_coordinator.cache_clear()
+    return {"product": product, "vector_status": sync_status}
+
+
+@router.put("/products/{product_id}")
+def save_catalog_product(product_id: int, payload: ProductPayload):
+    payload_dict = payload.model_dump(exclude_none=True) if hasattr(payload, "model_dump") else payload.dict(exclude_none=True)
+    product = upsert_product(product_id, payload_dict)
+    sync_status = sync_vector_store_after_product_change(list_products())
+    get_coordinator.cache_clear()
+    return {"product": product, "vector_status": sync_status}
 
 
 @router.get("/vector-index/status")

@@ -7,5 +7,7 @@ vector_store_backend: "local_faiss"
 vector_index_strategy: "prefer_persisted"
 # only applies to local_faiss when persisted index is missing
 vector_auto_build: true
+# persisted | runtime | invalidate
+vector_sync_on_product_change: "persisted"
 topk_recommend: 5
 openai_api_key: ""
