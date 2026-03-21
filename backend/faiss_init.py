@@ -1,20 +1,47 @@
-import json
-
-import faiss
 import numpy as np
 
-# 读取商品示例数据
-with open("backend/data/sample_products.json", "r") as f:
-    products = json.load(f)
+from app.services.llm_client import get_embedding_model
+from app.services.product_service import get_product_index_path, list_products
 
-# 随机生成向量（模拟商品 embedding）
-d = 128  # 向量维度
-vectors = np.random.random((len(products), d)).astype("float32")
+try:
+    import faiss
+except ImportError:
+    faiss = None
 
-# 初始化 FAISS 索引
-index = faiss.IndexFlatL2(d)
-index.add(vectors)
+try:
+    from sentence_transformers import SentenceTransformer
+except ImportError:
+    SentenceTransformer = None
 
-# 保存索引
-faiss.write_index(index, "backend/data/product_index.faiss")
-print(f"FAISS index built with {len(products)} products.")
+
+def build_faiss_index():
+    if faiss is None or SentenceTransformer is None:
+        raise RuntimeError("faiss-cpu and sentence-transformers are required to build the index.")
+
+    products = list_products()
+    texts = [
+        " ".join(
+            [
+                product.get("name", ""),
+                product.get("description", ""),
+                product.get("category", ""),
+                product.get("brand", ""),
+                " ".join(product.get("tags", [])),
+            ]
+        ).strip()
+        for product in products
+    ]
+
+    model = SentenceTransformer(get_embedding_model(), local_files_only=True)
+    vectors = model.encode(texts, normalize_embeddings=True).astype(np.float32)
+    index = faiss.IndexFlatIP(vectors.shape[1])
+    index.add(vectors)
+
+    output_path = get_product_index_path()
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    faiss.write_index(index, str(output_path))
+    print(f"FAISS index built with {len(products)} products at {output_path}.")
+
+
+if __name__ == "__main__":
+    build_faiss_index()

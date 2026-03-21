@@ -23,6 +23,8 @@ class MultiAgentCoordinator:
         if image_path:
             # 图片搜索优先
             recommended = self.image_agent.search_by_image(image_path)
+            for product in recommended:
+                product.setdefault("reason", "Image-based fallback recommendation")
         else:
             recommended = self.recommend_agent.recommend(query, user_profile)
 
@@ -52,6 +54,9 @@ class MultiAgentCoordinator:
             safe_products.append({
                 "id": p.get("id"),
                 "name": p.get("name"),
+                "brand": p.get("brand"),
+                "category": p.get("category"),
+                "rating": p.get("rating"),
                 "price": p.get("price"),
                 "reason": p.get("reason", ""),
                 "available": p.get("available", []),

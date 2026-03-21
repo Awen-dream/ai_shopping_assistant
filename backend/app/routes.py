@@ -1,19 +1,39 @@
-from fastapi import APIRouter, Query, UploadFile, File
+import os
+import shutil
+import tempfile
+from functools import lru_cache
+from pathlib import Path
+
+from fastapi import APIRouter, File, Query, UploadFile
+
 from .multi_agent_coordinator import MultiAgentCoordinator
-import shutil, os
 
 router = APIRouter()
-coordinator = MultiAgentCoordinator()
+
+
+@lru_cache(maxsize=1)
+def get_coordinator():
+    return MultiAgentCoordinator()
+
 
 @router.get("/multi-agent-task")
-def query_products(q: str):
-    return coordinator.handle_query(query=q)
+def query_products(q: str = Query(..., min_length=1)):
+    results = get_coordinator().handle_query(query=q)
+    return {"results": results}
+
 
 @router.post("/multi-agent-task/image")
 def query_by_image(file: UploadFile = File(...)):
-    temp_path = f"/tmp/{file.filename}"
-    with open(temp_path, "wb") as f:
-        shutil.copyfileobj(file.file, f)
-    results = coordinator.handle_query(image_path=temp_path)
-    os.remove(temp_path)
-    return results
+    suffix = Path(file.filename or "").suffix
+    temp_path = None
+
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
+            shutil.copyfileobj(file.file, temp_file)
+            temp_path = temp_file.name
+
+        results = get_coordinator().handle_query(image_path=temp_path)
+        return {"results": results}
+    finally:
+        if temp_path and os.path.exists(temp_path):
+            os.remove(temp_path)

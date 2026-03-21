@@ -1,12 +1,19 @@
-import os
-import json
-import faiss
 import numpy as np
-from sentence_transformers import SentenceTransformer
 from typing import List, Dict
 
 from app.agents.intent_agent import IntentAgent
-from app.services.llm_client import get_llm_client
+from app.services.llm_client import get_embedding_model, is_vector_search_enabled
+from app.services.product_service import list_products
+
+try:
+    import faiss
+except ImportError:
+    faiss = None
+
+try:
+    from sentence_transformers import SentenceTransformer
+except ImportError:
+    SentenceTransformer = None
 
 # =========================
 # 本地规则类别映射
@@ -28,18 +35,70 @@ def classify_intent_rule(query: str) -> str:
 # Retriever
 # =========================
 class Retriever:
-    def __init__(self, products: List[Dict], model_name='all-MiniLM-L6-v2'):
+    def __init__(self, products: List[Dict], model_name: str | None = None):
         self.products = products
-        self.model = SentenceTransformer(model_name)
+        self.model = None
+        self.embeddings = None
+        self.index = None
+        self.ready = False
+        self.texts = [self._product_text(product) for product in products]
+        model_name = model_name or get_embedding_model()
 
-        self.texts = [p['name'] + ' ' + p.get('description', '') for p in products]
-        self.embeddings = self.model.encode(self.texts, normalize_embeddings=True)
+        if not is_vector_search_enabled() or faiss is None or SentenceTransformer is None:
+            return
 
-        dim = self.embeddings.shape[1]
-        self.index = faiss.IndexFlatIP(dim)
-        self.index.add(self.embeddings)
+        try:
+            self.model = SentenceTransformer(model_name, local_files_only=True)
+            self.embeddings = self.model.encode(self.texts, normalize_embeddings=True)
+            dim = self.embeddings.shape[1]
+            self.index = faiss.IndexFlatIP(dim)
+            self.index.add(self.embeddings)
+            self.ready = True
+        except Exception:
+            self.model = None
+            self.embeddings = None
+            self.index = None
+            self.ready = False
+
+    @staticmethod
+    def _product_text(product: Dict) -> str:
+        fields = [
+            product.get('name', ''),
+            product.get('description', ''),
+            product.get('category', ''),
+            product.get('brand', ''),
+            ' '.join(product.get('tags', [])),
+        ]
+        return ' '.join(part for part in fields if part)
+
+    @staticmethod
+    def _extract_terms(query: str) -> list[str]:
+        query_lower = query.lower()
+        terms = [query_lower]
+        for category, keywords in CATEGORY_KEYWORDS.items():
+            if category.lower() in query_lower or any(keyword in query_lower for keyword in keywords):
+                terms.append(category.lower())
+                terms.extend(keywords)
+        return list(dict.fromkeys(term for term in terms if term))
+
+    def _fallback_search(self, query: str, topk=20):
+        terms = self._extract_terms(query)
+        scored = []
+        for product, text in zip(self.products, self.texts):
+            lowered = text.lower()
+            score = sum(1 for term in terms if term in lowered)
+            if score:
+                scored.append((product, float(score)))
+
+        if not scored:
+            scored = [(product, 0.1) for product in self.products]
+
+        return sorted(scored, key=lambda item: item[1], reverse=True)[:topk]
 
     def search(self, query: str, topk=20):
+        if not self.ready:
+            return self._fallback_search(query, topk=topk)
+
         q_emb = self.model.encode([query], normalize_embeddings=True)
         scores, idxs = self.index.search(q_emb, topk)
         return [(self.products[i], float(scores[0][j])) for j, i in enumerate(idxs[0])]
@@ -53,15 +112,16 @@ class KeywordRetriever:
 
     def search(self, query):
         query = query.lower()
-        keywords = query.split()
+        keywords = Retriever._extract_terms(query)
 
         results = []
         for p in self.products:
-            text = (p['name'] + ' ' + p.get('description', '')).lower()
-            if any(k in text for k in keywords):
-                results.append((p, 1.0))  # keyword命中给高分
+            text = Retriever._product_text(p).lower()
+            score = sum(1 for keyword in keywords if keyword in text)
+            if score:
+                results.append((p, float(score)))
 
-        return results
+        return sorted(results, key=lambda item: item[1], reverse=True)
 
 # =========================
 # Category Embedding
@@ -81,10 +141,18 @@ class CategoryEmbedding:
             self.category_texts[cat_lower].append(text)
 
         self.category_names = list(self.category_texts.keys())
+        self.category_embeddings = None
+
+        if not self.model or not self.category_names:
+            return
+
         category_texts_merged = [' '.join(texts) for texts in self.category_texts.values()]
         self.category_embeddings = self.model.encode(category_texts_merged, normalize_embeddings=True)
 
     def classify_query(self, query: str):
+        if self.category_embeddings is None:
+            return None
+
         q_emb = self.model.encode([query], normalize_embeddings=True)[0]
         sims = np.dot(self.category_embeddings, q_emb)
         if len(sims) == 0:
@@ -95,6 +163,9 @@ class CategoryEmbedding:
         return None
 
     def get_scores(self, query):
+        if self.category_embeddings is None:
+            return {}
+
         q_emb = self.model.encode([query], normalize_embeddings=True)[0]
         sims = np.dot(self.category_embeddings, q_emb)
         return dict(zip(self.category_names, sims))
@@ -158,11 +229,7 @@ class ReasonGenerator:
 # =========================
 class RecommendationAgent:
     def __init__(self):
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        data_path = os.path.join(base_dir, '../../../data', 'sample_products.json')
-        with open(data_path, 'r') as f:
-            self.products = json.load(f)
-
+        self.products = list_products()
         self.vector_retriever = Retriever(self.products)
         self.keyword_retriever = KeywordRetriever(self.products)
         self.model = self.vector_retriever.model
@@ -170,7 +237,6 @@ class RecommendationAgent:
         self.ranker = Ranker()
         self.reasoner = ReasonGenerator()
         self.intent_agent = IntentAgent()
-        llm_client = get_llm_client() if get_llm_client else None
 
     def hybrid_recall(self, query):
         vec_results = self.vector_retriever.search(query, topk=20)
@@ -192,11 +258,9 @@ class RecommendationAgent:
         return list(merged.values())
 
     def recommend(self, query: str, user_profile=None, topk=5):
-        user_profile = user_profile or {'preferred_brand': [], 'budget_range': [0, 999999]}
+        user_profile = user_profile or self.intent_agent.parse_intent(query)
 
-        # Step1: LLM分类意图
-        #intent_category = self.intent_agent.classify_intent(query, self.products)
-        intent_category = classify_intent_rule(query)
+        intent_category = user_profile.get('category') or classify_intent_rule(query)
         if not intent_category:
             intent_category = self.category_embedding.classify_query(query)
 

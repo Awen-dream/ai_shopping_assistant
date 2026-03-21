@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { fetchRecommendations } from '../services/api';
+import { fetchMultiAgentResults } from '../services/api';
 import ProductCard from './ProductCard';
 
 export default function ChatWindow() {
@@ -7,9 +7,9 @@ export default function ChatWindow() {
   const [results, setResults] = useState([]);
 
   const handleSearch = async () => {
-    const res = await fetchRecommendations(query);
-    setResults(res.recommendations);
-  }
+    const res = await fetchMultiAgentResults(query);
+    setResults(res.results);
+  };
 
   return (
     <div>

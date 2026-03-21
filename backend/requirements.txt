@@ -1,2 +1,11 @@
 fastapi
 uvicorn
+python-multipart
+numpy
+Pillow
+PyYAML
+openai
+pytest
+httpx
+faiss-cpu
+sentence-transformers

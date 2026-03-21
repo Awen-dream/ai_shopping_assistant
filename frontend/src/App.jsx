@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { fetchImageResults, fetchMultiAgentResults } from "./services/api";
 
 export default function App() {
   const [query, setQuery] = useState("");
@@ -9,14 +10,11 @@ export default function App() {
   const handleSearch = async () => {
     if (!query) return;
     try {
-      const res = await fetch(
-        `http://localhost:8000/multi-agent-task?q=${encodeURIComponent(query)}`
-      );
-      const data = await res.json();
+      const data = await fetchMultiAgentResults(query);
       // 去重商品，避免重复 id
       const uniqueResults = [];
       const seen = new Set();
-      (data.results || data).forEach((p) => {
+      data.results.forEach((p) => {
         if (!seen.has(p.id)) {
           seen.add(p.id);
           uniqueResults.push(p);
@@ -32,16 +30,10 @@ export default function App() {
   const handleImageSearch = async () => {
     if (!file) return;
     try {
-      const form = new FormData();
-      form.append("file", file);
-      const res = await fetch("http://localhost:8000/multi-agent-task/image", {
-        method: "POST",
-        body: form,
-      });
-      const data = await res.json();
+      const data = await fetchImageResults(file);
       const uniqueResults = [];
       const seen = new Set();
-      (data.results || data).forEach((p) => {
+      data.results.forEach((p) => {
         if (!seen.has(p.id)) {
           seen.add(p.id);
           uniqueResults.push(p);
