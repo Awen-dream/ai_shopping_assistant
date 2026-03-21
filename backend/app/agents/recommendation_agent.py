@@ -4,14 +4,8 @@ from typing import List, Dict
 
 from app.agents.intent_agent import CATEGORY_KEYWORDS as INTENT_CATEGORY_KEYWORDS
 from app.agents.intent_agent import INTEREST_KEYWORDS, IntentAgent
-from app.services.embedding_service import get_sentence_transformer
-from app.services.llm_client import is_vector_search_enabled
 from app.services.product_service import list_products
-
-try:
-    import faiss
-except ImportError:
-    faiss = None
+from app.services.vector_store_service import build_product_text, create_vector_store
 
 # =========================
 # 本地规则类别映射
@@ -39,42 +33,15 @@ def classify_intent_rule(query: str) -> str:
 class Retriever:
     def __init__(self, products: List[Dict], model_name: str | None = None):
         self.products = products
-        self.model = None
-        self.embeddings = None
-        self.index = None
-        self.ready = False
         self.texts = [self._product_text(product) for product in products]
-
-        if not is_vector_search_enabled() or faiss is None:
-            return
-
-        try:
-            self.model = get_sentence_transformer()
-            if self.model is None:
-                return
-            self.embeddings = self.model.encode(self.texts, normalize_embeddings=True)
-            dim = self.embeddings.shape[1]
-            self.index = faiss.IndexFlatIP(dim)
-            self.index.add(self.embeddings)
-            self.ready = True
-        except Exception:
-            self.model = None
-            self.embeddings = None
-            self.index = None
-            self.ready = False
+        self.vector_store = create_vector_store(products)
+        self.model = self.vector_store.model
+        self.index = self.vector_store.index
+        self.ready = self.vector_store.ready
 
     @staticmethod
     def _product_text(product: Dict) -> str:
-        fields = [
-            product.get('name', ''),
-            product.get('description', ''),
-            product.get('category', ''),
-            product.get('subcategory', ''),
-            product.get('brand', ''),
-            ' '.join(product.get('tags', [])),
-            product.get('promotion_tag', ''),
-        ]
-        return ' '.join(part for part in fields if part)
+        return build_product_text(product)
 
     @staticmethod
     def _extract_terms(query: str) -> list[str]:
@@ -109,9 +76,8 @@ class Retriever:
         if not self.ready:
             return self._fallback_search(query, topk=topk)
 
-        q_emb = self.model.encode([query], normalize_embeddings=True)
-        scores, idxs = self.index.search(q_emb, topk)
-        return [(self.products[i], float(scores[0][j])) for j, i in enumerate(idxs[0])]
+        results = self.vector_store.search(query, topk=topk)
+        return results or self._fallback_search(query, topk=topk)
 
 # =========================
 # Keyword Recall

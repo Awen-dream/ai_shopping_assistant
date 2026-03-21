@@ -1,5 +1,11 @@
 llm_model: "gpt-4o-mini"
 embedding_model: "all-MiniLM-L6-v2"
 enable_vector_search: true
+# local_faiss | memory | milvus | disabled
+vector_store_backend: "local_faiss"
+# prefer_persisted | rebuild | persisted_only
+vector_index_strategy: "prefer_persisted"
+# only applies to local_faiss when persisted index is missing
+vector_auto_build: true
 topk_recommend: 5
 openai_api_key: ""

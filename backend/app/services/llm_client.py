@@ -46,6 +46,21 @@ def is_vector_search_enabled(default: bool = False) -> bool:
     return str(raw_value).strip().lower() in {"1", "true", "yes", "on"}
 
 
+def get_vector_store_backend(default: str = "local_faiss") -> str:
+    return str(load_settings().get("vector_store_backend", default)).strip().lower()
+
+
+def get_vector_index_strategy(default: str = "prefer_persisted") -> str:
+    return str(load_settings().get("vector_index_strategy", default)).strip().lower()
+
+
+def is_vector_auto_build_enabled(default: bool = True) -> bool:
+    raw_value = load_settings().get("vector_auto_build", default)
+    if isinstance(raw_value, bool):
+        return raw_value
+    return str(raw_value).strip().lower() in {"1", "true", "yes", "on"}
+
+
 @lru_cache(maxsize=1)
 def get_llm_client():
     api_key = load_openai_key()
