@@ -1,7 +1,10 @@
 class PriceAgent:
     def compare(self, products):
         for p in products:
-            # 模拟价格比较
-            for item in p["search_results"]:
-                item["price"] = p["price"] * (0.9 if item["store"] == "StoreA" else 1.1)
+            sorted_results = sorted(
+                p["search_results"],
+                key=lambda item: (item["sale_price"], item["shipping_days"])
+            )
+            p["search_results"] = sorted_results
+            p["best_offer"] = sorted_results[0] if sorted_results else None
         return products

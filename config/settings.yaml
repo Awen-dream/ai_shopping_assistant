@@ -1,5 +1,5 @@
 llm_model: "gpt-4o-mini"
 embedding_model: "all-MiniLM-L6-v2"
-enable_vector_search: false
+enable_vector_search: true
 topk_recommend: 5
 openai_api_key: ""

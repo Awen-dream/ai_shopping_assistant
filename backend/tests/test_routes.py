@@ -14,6 +14,7 @@ def test_multi_agent_task_returns_results_wrapper():
     assert "results" in payload
     assert payload["results"]
     assert payload["results"][0]["category"] == "耳机"
+    assert payload["results"][0]["best_offer"]["sale_price"] <= payload["results"][0]["price"]
 
 
 def test_multi_agent_task_rejects_empty_query():
@@ -32,3 +33,4 @@ def test_image_route_falls_back_safely_for_invalid_image_bytes():
     payload = response.json()
     assert "results" in payload
     assert payload["results"]
+    assert payload["results"][0]["reason"]

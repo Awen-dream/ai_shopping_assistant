@@ -59,6 +59,9 @@ class MultiAgentCoordinator:
                 "rating": p.get("rating"),
                 "price": p.get("price"),
                 "reason": p.get("reason", ""),
+                "match_score": p.get("match_score"),
+                "matched_features": p.get("matched_features", {}),
+                "best_offer": p.get("best_offer"),
                 "available": p.get("available", []),
                 "search_results": p.get("search_results", [])
             })

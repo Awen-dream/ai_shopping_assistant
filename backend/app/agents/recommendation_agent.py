@@ -1,8 +1,11 @@
 import numpy as np
+import re
 from typing import List, Dict
 
-from app.agents.intent_agent import IntentAgent
-from app.services.llm_client import get_embedding_model, is_vector_search_enabled
+from app.agents.intent_agent import CATEGORY_KEYWORDS as INTENT_CATEGORY_KEYWORDS
+from app.agents.intent_agent import INTEREST_KEYWORDS, IntentAgent
+from app.services.embedding_service import get_sentence_transformer
+from app.services.llm_client import is_vector_search_enabled
 from app.services.product_service import list_products
 
 try:
@@ -10,19 +13,18 @@ try:
 except ImportError:
     faiss = None
 
-try:
-    from sentence_transformers import SentenceTransformer
-except ImportError:
-    SentenceTransformer = None
-
 # =========================
 # 本地规则类别映射
 # =========================
 CATEGORY_KEYWORDS = {
     "手机": ["iphone", "小米", "华为", "oppo", "vivo", "手机"],
-    "笔记本": ["macbook", "笔记本", "laptop", "surface","电脑"],
+    "笔记本": ["macbook", "笔记本", "laptop", "surface", "电脑", "轻薄本"],
     "耳机": ["耳机", "headphones", "wh-1000xm5", "airpods"]
 }
+
+for category, keywords in INTENT_CATEGORY_KEYWORDS.items():
+    CATEGORY_KEYWORDS.setdefault(category, [])
+    CATEGORY_KEYWORDS[category] = list(dict.fromkeys(CATEGORY_KEYWORDS[category] + keywords))
 
 def classify_intent_rule(query: str) -> str:
     q = query.lower()
@@ -42,13 +44,14 @@ class Retriever:
         self.index = None
         self.ready = False
         self.texts = [self._product_text(product) for product in products]
-        model_name = model_name or get_embedding_model()
 
-        if not is_vector_search_enabled() or faiss is None or SentenceTransformer is None:
+        if not is_vector_search_enabled() or faiss is None:
             return
 
         try:
-            self.model = SentenceTransformer(model_name, local_files_only=True)
+            self.model = get_sentence_transformer()
+            if self.model is None:
+                return
             self.embeddings = self.model.encode(self.texts, normalize_embeddings=True)
             dim = self.embeddings.shape[1]
             self.index = faiss.IndexFlatIP(dim)
@@ -74,10 +77,15 @@ class Retriever:
     @staticmethod
     def _extract_terms(query: str) -> list[str]:
         query_lower = query.lower()
-        terms = [query_lower]
+        alnum_terms = re.findall(r"[a-z0-9]+", query_lower)
+        terms = [query_lower, *alnum_terms]
         for category, keywords in CATEGORY_KEYWORDS.items():
             if category.lower() in query_lower or any(keyword in query_lower for keyword in keywords):
                 terms.append(category.lower())
+                terms.extend(keywords)
+        for interest, keywords in INTEREST_KEYWORDS.items():
+            if interest in query_lower or any(keyword in query_lower for keyword in keywords):
+                terms.append(interest.lower())
                 terms.extend(keywords)
         return list(dict.fromkeys(term for term in terms if term))
 
@@ -123,11 +131,36 @@ class KeywordRetriever:
 
         return sorted(results, key=lambda item: item[1], reverse=True)
 
+
+class QueryContextBuilder:
+    def build(self, query: str, user_profile: dict | None = None):
+        user_profile = user_profile or {}
+        category = user_profile.get("category") or classify_intent_rule(query) or ""
+        preferred_brand = user_profile.get("preferred_brand") or []
+        interests = user_profile.get("interests") or []
+
+        terms = Retriever._extract_terms(query)
+        if category:
+            terms.append(category.lower())
+            terms.extend(CATEGORY_KEYWORDS.get(category, []))
+        for interest in interests:
+            terms.append(interest.lower())
+            terms.extend(INTEREST_KEYWORDS.get(interest, []))
+
+        return {
+            "raw_query": query,
+            "category": category,
+            "preferred_brand": preferred_brand,
+            "budget_range": user_profile.get("budget_range", [0, 999999]),
+            "interests": interests,
+            "terms": list(dict.fromkeys(term for term in terms if term)),
+        }
+
 # =========================
 # Category Embedding
 # =========================
 class CategoryEmbedding:
-    def __init__(self, products: List[Dict], model: SentenceTransformer):
+    def __init__(self, products: List[Dict], model):
         self.model = model
         self.category_texts = {}
         for p in products:
@@ -176,33 +209,64 @@ class CategoryEmbedding:
 class Ranker:
     def __init__(self, weights=None):
         self.weights = weights or {
-            'rating': 0.4,
-            'brand': 0.2,
-            'price': 0.2,
-            'similarity': 0.6
+            'keyword': 0.42,
+            'vector': 0.18,
+            'interest': 0.15,
+            'category': 0.10,
+            'brand': 0.08,
+            'budget': 0.04,
+            'rating': 0.03,
         }
 
-    def score(self, product, sim, category_sim, user_profile):
-        brand_score = 1 if product.get('brand') in user_profile.get('preferred_brand', []) else 0
-        price_range = user_profile.get('budget_range', [0, 999999])
-        price_score = 1 if price_range[0] <= product.get('price', 0) <= price_range[1] else 0
+    @staticmethod
+    def _score_product(product, query_context, keyword_score, vector_score):
+        product_text = Retriever._product_text(product).lower()
+        matched_terms = [term for term in query_context["terms"] if term in product_text]
+        matched_interests = [interest for interest in query_context["interests"] if interest in product_text]
 
-        base_score = (
-            self.weights['rating'] * product.get('rating', 0) +
-            self.weights['brand'] * brand_score +
-            self.weights['price'] * price_score +
-            self.weights['similarity'] * sim
+        category_match = 1 if query_context["category"] and product.get("category") == query_context["category"] else 0
+        brand_match = 1 if query_context["preferred_brand"] and product.get("brand") in query_context["preferred_brand"] else 0
+        budget_low, budget_high = query_context["budget_range"]
+        budget_match = 1 if budget_low <= product.get("price", 0) <= budget_high else 0
+        rating_score = min(product.get("rating", 0) / 5.0, 1.0)
+        interest_score = min(len(matched_interests) / max(len(query_context["interests"]), 1), 1.0) if query_context["interests"] else 0.0
+
+        detail = {
+            "matched_terms": matched_terms,
+            "matched_interests": matched_interests,
+            "category_match": bool(category_match),
+            "brand_match": bool(brand_match),
+            "budget_match": bool(budget_match),
+            "interest_score": interest_score,
+            "rating_score": rating_score,
+            "keyword_score": keyword_score,
+            "vector_score": vector_score,
+        }
+        return detail
+
+    def score(self, product, query_context, keyword_score, vector_score):
+        detail = self._score_product(product, query_context, keyword_score, vector_score)
+        score = (
+            self.weights["keyword"] * keyword_score +
+            self.weights["vector"] * vector_score +
+            self.weights["interest"] * detail["interest_score"] +
+            self.weights["category"] * (1.0 if detail["category_match"] else 0.0) +
+            self.weights["brand"] * (1.0 if detail["brand_match"] else 0.0) +
+            self.weights["budget"] * (1.0 if detail["budget_match"] else 0.0) +
+            self.weights["rating"] * detail["rating_score"]
         )
+        return score, detail
 
-        return base_score * (0.5 + 0.5 * category_sim)  # category embedding 作为加分
-
-    def rank(self, items, category_scores, user_profile):
+    def rank(self, items, query_context):
         ranked = []
-        for p, s in items:
-            cat = p.get('category', '').lower()
-            category_sim = category_scores.get(cat, 0)
-            final_score = self.score(p, s, category_sim, user_profile)
-            ranked.append((p, final_score))
+        for item in items:
+            final_score, detail = self.score(
+                item["product"],
+                query_context,
+                item.get("keyword_score", 0.0),
+                item.get("vector_score", 0.0),
+            )
+            ranked.append((item["product"], final_score, detail))
         return sorted(ranked, key=lambda x: x[1], reverse=True)
 
 # =========================
@@ -212,17 +276,31 @@ class ReasonGenerator:
     def __init__(self, llm=None):
         self.llm = llm
 
-    def generate_batch(self, products, user_profile):
-        return [self.default_reason(p, user_profile) for p in products]
+    def generate_batch(self, ranked_items, user_profile):
+        return [self.default_reason(product, user_profile, detail) for product, _, detail in ranked_items]
 
-    def default_reason(self, product, user_profile):
+    def default_reason(self, product, user_profile, detail):
         reasons = []
-        if product.get('brand') in user_profile.get('preferred_brand', []):
-            reasons.append('Preferred brand')
-        if product.get('price', 0) <= user_profile.get('budget_range', [0, 999999])[1]:
-            reasons.append('Within budget')
-        reasons.append(f"Rating {product.get('rating', 0)}")
-        return ', '.join(reasons)
+        if detail.get("category_match"):
+            reasons.append(f"匹配你要找的{product.get('category')}")
+        if detail.get("brand_match"):
+            reasons.append(f"命中品牌偏好 {product.get('brand')}")
+        if detail.get("matched_interests"):
+            reasons.append(f"命中诉求：{'/'.join(detail['matched_interests'])}")
+        if detail.get("budget_match"):
+            reasons.append("价格在预算范围内")
+        if product.get("rating", 0) >= 4.8:
+            reasons.append(f"评分 {product.get('rating')}")
+        if detail.get("matched_terms"):
+            keywords = "/".join(detail["matched_terms"][:2])
+            reasons.append(f"关键词命中：{keywords}")
+
+        unique_reasons = []
+        for reason in reasons:
+            if reason not in unique_reasons:
+                unique_reasons.append(reason)
+
+        return "；".join(unique_reasons[:4]) or "与当前查询较匹配"
 
 # =========================
 # Main Agent
@@ -232,56 +310,93 @@ class RecommendationAgent:
         self.products = list_products()
         self.vector_retriever = Retriever(self.products)
         self.keyword_retriever = KeywordRetriever(self.products)
+        self.query_context_builder = QueryContextBuilder()
         self.model = self.vector_retriever.model
         self.category_embedding = CategoryEmbedding(self.products, self.model)
         self.ranker = Ranker()
         self.reasoner = ReasonGenerator()
         self.intent_agent = IntentAgent()
 
-    def hybrid_recall(self, query):
-        vec_results = self.vector_retriever.search(query, topk=20)
-        kw_results = self.keyword_retriever.search(query)
+    def hybrid_recall(self, query, query_context):
+        vector_results = self.vector_retriever.search(query, topk=20)
+        keyword_results = self.keyword_retriever.search(query)
         merged = {}
-        query_lower = query.lower()
 
-        for p, s in vec_results:
-            keyword_hit = any(k in (p['name'] + p.get('description', '')).lower() for k in query_lower.split())
-            if keyword_hit:
-                s += 1.0
+        max_keyword_score = max((score for _, score in keyword_results), default=1.0)
+        vector_scores = [score for _, score in vector_results]
+        max_vector_score = max(vector_scores, default=1.0)
+        min_vector_score = min(vector_scores, default=0.0)
+
+        for product, score in keyword_results:
+            merged[product["id"]] = {
+                "product": product,
+                "keyword_score": min(score / max_keyword_score, 1.0),
+                "vector_score": 0.0,
+            }
+
+        for product, score in vector_results:
+            if max_vector_score == min_vector_score:
+                normalized_vector_score = 1.0 if max_vector_score > 0 else 0.0
             else:
-                s *= 0.2
-            merged[p['id']] = (p, s)
+                normalized_vector_score = (score - min_vector_score) / (max_vector_score - min_vector_score)
+            merged.setdefault(
+                product["id"],
+                {"product": product, "keyword_score": 0.0, "vector_score": 0.0},
+            )
+            merged[product["id"]]["vector_score"] = max(
+                merged[product["id"]]["vector_score"],
+                normalized_vector_score,
+            )
 
-        for p, s in kw_results:
-            merged[p['id']] = (p, max(s, merged.get(p['id'], (p, 0))[1]))
+        candidates = list(merged.values()) or [
+            {"product": product, "keyword_score": 0.0, "vector_score": 0.0}
+            for product in self.products
+        ]
 
-        return list(merged.values())
+        if query_context["category"]:
+            candidates = [
+                item for item in candidates
+                if item["product"].get("category") == query_context["category"]
+            ] or candidates
+
+        if query_context["preferred_brand"]:
+            brand_matched = [
+                item for item in candidates
+                if item["product"].get("brand") in query_context["preferred_brand"]
+            ]
+            if brand_matched:
+                candidates = brand_matched
+
+        return candidates
 
     def recommend(self, query: str, user_profile=None, topk=5):
         user_profile = user_profile or self.intent_agent.parse_intent(query)
+        if not user_profile.get("category"):
+            user_profile["category"] = self.category_embedding.classify_query(query) or classify_intent_rule(query) or ""
 
-        intent_category = user_profile.get('category') or classify_intent_rule(query)
-        if not intent_category:
-            intent_category = self.category_embedding.classify_query(query)
+        query_context = self.query_context_builder.build(query, user_profile)
+        recalled = self.hybrid_recall(query, query_context)
+        ranked = self.ranker.rank(recalled, query_context)
 
-        recalled = self.hybrid_recall(query)
-
-        # Step2: 强制类别过滤
-        if intent_category:
-            recalled = [(p, s) for p, s in recalled if p.get('category', '').lower() == intent_category.lower()]
-
-        # Step3: 计算类别相似度
-        cat_scores = self.category_embedding.get_scores(query)
-        # Step4: 排序
-        ranked = self.ranker.rank(recalled, cat_scores, user_profile)
-
-        top_items = [p for p, _ in ranked[:topk]]
-        reasons = self.reasoner.generate_batch(top_items, user_profile)
+        top_ranked_items = ranked[:topk]
+        reasons = self.reasoner.generate_batch(top_ranked_items, user_profile)
 
         results = []
-        for p, r in zip(top_items, reasons):
+        for (product, score, detail), reason in zip(top_ranked_items, reasons):
+            best_match_score = round(score, 4)
+            matched_features = {
+                "matched_terms": detail.get("matched_terms", [])[:4],
+                "matched_interests": detail.get("matched_interests", []),
+                "category_match": detail.get("category_match", False),
+                "brand_match": detail.get("brand_match", False),
+                "budget_match": detail.get("budget_match", False),
+            }
+
+            p = product
             item = p.copy()
-            item['reason'] = r
+            item['reason'] = reason
+            item['match_score'] = best_match_score
+            item['matched_features'] = matched_features
             results.append(item)
 
         return results
