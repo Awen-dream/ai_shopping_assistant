@@ -4,6 +4,7 @@ from .agents.recommendation_agent import RecommendationAgent
 from .agents.search_agent import SearchAgent
 from .agents.intent_agent import IntentAgent
 from .agents.image_search_agent import ImageSearchAgent
+from .services.user_profile_service import get_user_profile, merge_profiles
 
 class MultiAgentCoordinator:
     def __init__(self):
@@ -17,8 +18,10 @@ class MultiAgentCoordinator:
             self.recommend_agent.products
         )
 
-    def handle_query(self, query: str = "", image_path: str | None = None):
-        user_profile = self.intent_agent.parse_intent(query)
+    def handle_query(self, query: str = "", image_path: str | None = None, user_id: str | None = None):
+        stored_profile = get_user_profile(user_id) if user_id else None
+        parsed_profile = self.intent_agent.parse_intent(query) if query else {}
+        user_profile = merge_profiles(stored_profile, parsed_profile)
 
         if image_path:
             # 图片搜索优先
@@ -56,8 +59,12 @@ class MultiAgentCoordinator:
                 "name": p.get("name"),
                 "brand": p.get("brand"),
                 "category": p.get("category"),
+                "subcategory": p.get("subcategory"),
                 "rating": p.get("rating"),
                 "price": p.get("price"),
+                "monthly_sales": p.get("monthly_sales"),
+                "promotion_tag": p.get("promotion_tag"),
+                "inventory_total": p.get("inventory_total"),
                 "reason": p.get("reason", ""),
                 "match_score": p.get("match_score"),
                 "matched_features": p.get("matched_features", {}),
@@ -67,16 +74,3 @@ class MultiAgentCoordinator:
             })
 
         return safe_products
-
-    def parse_user_intent(self, query: str):
-        # 🔹 简单规则示例：关键词匹配兴趣/类别
-        interests = []
-        if "手机" in query or "轻便" in query:
-            interests.append("轻便")
-        if "降噪" in query or "耳机" in query:
-            interests.append("降噪")
-        return {
-            "preferred_brand": ["Apple", "Sony", "Dell", "Adidas"],
-            "budget_range": [0, 15000],
-            "interests": interests
-        }

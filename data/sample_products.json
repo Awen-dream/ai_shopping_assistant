@@ -2,31 +2,229 @@
   {
     "id": 1,
     "name": "iPhone 15 Pro",
-    "description": "轻便好用的旗舰手机，拍照出色",
+    "description": "轻薄旗舰手机，影像能力强，适合追求拍照和流畅体验的人群",
     "category": "手机",
+    "subcategory": "旗舰手机",
     "brand": "Apple",
     "price": 6999,
     "rating": 4.9,
-    "tags": ["轻便", "拍照", "旗舰"]
+    "tags": ["轻薄", "拍照", "旗舰", "高性能"],
+    "monthly_sales": 3200,
+    "promotion_tag": "以旧换新补贴",
+    "inventory_total": 86,
+    "warehouses": [
+      {"name": "华东仓", "stock": 28},
+      {"name": "华南仓", "stock": 24},
+      {"name": "华北仓", "stock": 34}
+    ]
   },
   {
     "id": 2,
-    "name": "MacBook Air M2",
-    "description": "苹果轻薄笔记本，性能优异，续航出色",
-    "category": "笔记本",
+    "name": "iPhone 15",
+    "description": "均衡型苹果手机，性能稳定，适合日常拍照和长期使用",
+    "category": "手机",
+    "subcategory": "高端手机",
     "brand": "Apple",
-    "price": 10999,
-    "rating": 4.9,
-    "tags": ["轻薄", "办公", "续航"]
+    "price": 5399,
+    "rating": 4.8,
+    "tags": ["拍照", "稳定", "续航", "苹果生态"],
+    "monthly_sales": 4100,
+    "promotion_tag": "教育优惠",
+    "inventory_total": 112,
+    "warehouses": [
+      {"name": "华东仓", "stock": 45},
+      {"name": "西南仓", "stock": 31},
+      {"name": "华北仓", "stock": 36}
+    ]
   },
   {
     "id": 3,
+    "name": "Xiaomi 14",
+    "description": "紧凑型安卓旗舰，徕卡影像表现出色，适合高性价比拍照需求",
+    "category": "手机",
+    "subcategory": "旗舰手机",
+    "brand": "Xiaomi",
+    "price": 3999,
+    "rating": 4.7,
+    "tags": ["拍照", "旗舰", "性价比", "轻便"],
+    "monthly_sales": 5300,
+    "promotion_tag": "直降 300 元",
+    "inventory_total": 143,
+    "warehouses": [
+      {"name": "华东仓", "stock": 48},
+      {"name": "华中仓", "stock": 41},
+      {"name": "西南仓", "stock": 54}
+    ]
+  },
+  {
+    "id": 4,
+    "name": "HUAWEI Pura 70",
+    "description": "影像旗舰手机，弱光拍照和长焦体验优秀，适合商务与摄影场景",
+    "category": "手机",
+    "subcategory": "影像手机",
+    "brand": "Huawei",
+    "price": 5499,
+    "rating": 4.8,
+    "tags": ["拍照", "商务", "高端", "鸿蒙"],
+    "monthly_sales": 2700,
+    "promotion_tag": "赠延保服务",
+    "inventory_total": 74,
+    "warehouses": [
+      {"name": "华南仓", "stock": 24},
+      {"name": "华北仓", "stock": 26},
+      {"name": "西北仓", "stock": 24}
+    ]
+  },
+  {
+    "id": 5,
+    "name": "MacBook Air M3",
+    "description": "苹果轻薄笔记本，续航优秀，适合办公、学习和轻量创作",
+    "category": "笔记本",
+    "subcategory": "轻薄本",
+    "brand": "Apple",
+    "price": 9999,
+    "rating": 4.9,
+    "tags": ["轻薄", "办公", "续航", "苹果生态"],
+    "monthly_sales": 2900,
+    "promotion_tag": "教育优惠",
+    "inventory_total": 61,
+    "warehouses": [
+      {"name": "华东仓", "stock": 19},
+      {"name": "华南仓", "stock": 22},
+      {"name": "华北仓", "stock": 20}
+    ]
+  },
+  {
+    "id": 6,
+    "name": "Dell XPS 13",
+    "description": "高端轻薄本，屏幕素质出色，适合商务办公和便携出差",
+    "category": "笔记本",
+    "subcategory": "轻薄本",
+    "brand": "Dell",
+    "price": 8999,
+    "rating": 4.7,
+    "tags": ["轻薄", "办公", "商务", "高屏占比"],
+    "monthly_sales": 1300,
+    "promotion_tag": "限时满减",
+    "inventory_total": 39,
+    "warehouses": [
+      {"name": "华东仓", "stock": 13},
+      {"name": "华中仓", "stock": 11},
+      {"name": "华北仓", "stock": 15}
+    ]
+  },
+  {
+    "id": 7,
+    "name": "Lenovo Xiaoxin Pro 14",
+    "description": "高性价比轻薄本，适合学生与办公人群，性能和屏幕比较均衡",
+    "category": "笔记本",
+    "subcategory": "轻薄本",
+    "brand": "Lenovo",
+    "price": 5299,
+    "rating": 4.6,
+    "tags": ["轻薄", "办公", "学生", "性价比"],
+    "monthly_sales": 4600,
+    "promotion_tag": "国补专区",
+    "inventory_total": 153,
+    "warehouses": [
+      {"name": "华东仓", "stock": 52},
+      {"name": "华南仓", "stock": 48},
+      {"name": "西南仓", "stock": 53}
+    ]
+  },
+  {
+    "id": 8,
+    "name": "ThinkPad X1 Carbon",
+    "description": "经典商务轻薄本，键盘手感优秀，适合重度办公和差旅使用",
+    "category": "笔记本",
+    "subcategory": "商务本",
+    "brand": "Lenovo",
+    "price": 10999,
+    "rating": 4.8,
+    "tags": ["商务", "轻薄", "办公", "耐用"],
+    "monthly_sales": 980,
+    "promotion_tag": "企业采购优惠",
+    "inventory_total": 28,
+    "warehouses": [
+      {"name": "华东仓", "stock": 8},
+      {"name": "华北仓", "stock": 9},
+      {"name": "华南仓", "stock": 11}
+    ]
+  },
+  {
+    "id": 9,
     "name": "Sony WH-1000XM5",
-    "description": "顶级降噪头戴耳机，适合办公和旅行",
+    "description": "顶级降噪头戴耳机，适合办公、旅行和通勤，长时间佩戴舒适",
     "category": "耳机",
+    "subcategory": "头戴耳机",
     "brand": "Sony",
     "price": 2899,
     "rating": 4.9,
-    "tags": ["降噪", "办公", "旅行"]
+    "tags": ["降噪", "办公", "旅行", "头戴"],
+    "monthly_sales": 2500,
+    "promotion_tag": "赠收纳包",
+    "inventory_total": 64,
+    "warehouses": [
+      {"name": "华东仓", "stock": 21},
+      {"name": "华南仓", "stock": 19},
+      {"name": "华北仓", "stock": 24}
+    ]
+  },
+  {
+    "id": 10,
+    "name": "AirPods Pro 2",
+    "description": "苹果真无线降噪耳机，适合 iPhone 用户和日常通勤场景",
+    "category": "耳机",
+    "subcategory": "真无线耳机",
+    "brand": "Apple",
+    "price": 1899,
+    "rating": 4.8,
+    "tags": ["降噪", "真无线", "通勤", "苹果生态"],
+    "monthly_sales": 6200,
+    "promotion_tag": "会员立减",
+    "inventory_total": 172,
+    "warehouses": [
+      {"name": "华东仓", "stock": 58},
+      {"name": "华中仓", "stock": 54},
+      {"name": "华北仓", "stock": 60}
+    ]
+  },
+  {
+    "id": 11,
+    "name": "Bose QuietComfort Ultra",
+    "description": "高端降噪头戴耳机，人声表现细腻，适合长途飞行和深度听音",
+    "category": "耳机",
+    "subcategory": "头戴耳机",
+    "brand": "Bose",
+    "price": 3199,
+    "rating": 4.7,
+    "tags": ["降噪", "头戴", "旅行", "音质"],
+    "monthly_sales": 980,
+    "promotion_tag": "晒单返券",
+    "inventory_total": 33,
+    "warehouses": [
+      {"name": "华东仓", "stock": 9},
+      {"name": "华南仓", "stock": 11},
+      {"name": "华北仓", "stock": 13}
+    ]
+  },
+  {
+    "id": 12,
+    "name": "Redmi Buds 5 Pro",
+    "description": "高性价比真无线降噪耳机，适合日常通勤和轻度办公",
+    "category": "耳机",
+    "subcategory": "真无线耳机",
+    "brand": "Xiaomi",
+    "price": 399,
+    "rating": 4.5,
+    "tags": ["降噪", "真无线", "性价比", "通勤"],
+    "monthly_sales": 8800,
+    "promotion_tag": "百元神券",
+    "inventory_total": 231,
+    "warehouses": [
+      {"name": "华东仓", "stock": 80},
+      {"name": "华南仓", "stock": 72},
+      {"name": "西南仓", "stock": 79}
+    ]
   }
 ]

@@ -44,3 +44,19 @@ def test_hybrid_recall_merges_keyword_and_vector_scores():
     assert candidates_by_id[product_a["id"]]["keyword_score"] > 0
     assert candidates_by_id[product_a["id"]]["vector_score"] >= 0
     assert candidates_by_id[product_b["id"]]["vector_score"] > 0
+
+
+def test_preferred_categories_affect_candidates_when_query_has_no_category():
+    agent = RecommendationAgent()
+
+    result = agent.recommend(
+        "适合学生的高性价比设备",
+        {
+            "preferred_brand": ["Lenovo", "Xiaomi"],
+            "budget_range": [0, 6000],
+            "interests": ["办公", "性价比"],
+            "preferred_categories": ["笔记本"],
+        },
+    )[0]
+
+    assert result["category"] == "笔记本"

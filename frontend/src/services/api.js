@@ -8,16 +8,24 @@ async function parseJsonResponse(response) {
   return response.json();
 }
 
-export async function fetchMultiAgentResults(query) {
+export async function fetchMultiAgentResults(query, userId = "") {
+  const params = new URLSearchParams({ q: query });
+  if (userId) {
+    params.set("user_id", userId);
+  }
+
   const response = await fetch(
-    `${API_BASE_URL}/multi-agent-task?q=${encodeURIComponent(query)}`
+    `${API_BASE_URL}/multi-agent-task?${params.toString()}`
   );
   return parseJsonResponse(response);
 }
 
-export async function fetchImageResults(file) {
+export async function fetchImageResults(file, userId = "") {
   const formData = new FormData();
   formData.append("file", file);
+  if (userId) {
+    formData.append("user_id", userId);
+  }
 
   const response = await fetch(`${API_BASE_URL}/multi-agent-task/image`, {
     method: "POST",

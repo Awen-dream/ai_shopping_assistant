@@ -1,0 +1,69 @@
+{
+  "demo_apple_fan": {
+    "user_id": "demo_apple_fan",
+    "preferred_brand": [
+      "Apple",
+      "Sony"
+    ],
+    "budget_range": [
+      1500,
+      12000
+    ],
+    "interests": [
+      "轻便",
+      "降噪"
+    ],
+    "category": "",
+    "preferred_categories": [
+      "笔记本",
+      "耳机"
+    ],
+    "price_sensitivity": "medium",
+    "city": "Shanghai",
+    "updated_at": "2026-03-21T10:00:00+08:00"
+  },
+  "demo_student": {
+    "user_id": "demo_student",
+    "preferred_brand": [
+      "Lenovo",
+      "Xiaomi"
+    ],
+    "budget_range": [
+      0,
+      6000
+    ],
+    "interests": [
+      "办公",
+      "性价比"
+    ],
+    "category": "",
+    "preferred_categories": [
+      "手机",
+      "笔记本"
+    ],
+    "price_sensitivity": "high",
+    "city": "Hangzhou",
+    "updated_at": "2026-03-21T10:00:00+08:00"
+  },
+  "test_stage2_user": {
+    "preferred_brand": [
+      "Apple"
+    ],
+    "budget_range": [
+      1000,
+      9000
+    ],
+    "interests": [
+      "轻便"
+    ],
+    "category": "",
+    "preferred_categories": [
+      "手机",
+      "耳机"
+    ],
+    "price_sensitivity": "medium",
+    "city": "Suzhou",
+    "updated_at": "2026-03-21T13:50:56.157358+00:00",
+    "user_id": "test_stage2_user"
+  }
+}

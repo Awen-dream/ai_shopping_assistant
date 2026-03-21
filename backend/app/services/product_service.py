@@ -6,6 +6,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DATA_DIR = PROJECT_ROOT / "data"
 PRODUCTS_PATH = DATA_DIR / "sample_products.json"
+USER_PROFILES_PATH = DATA_DIR / "user_profiles.json"
 FAISS_INDEX_PATH = DATA_DIR / "product_index.faiss"
 
 
@@ -15,6 +16,10 @@ def get_products_path() -> Path:
 
 def get_product_index_path() -> Path:
     return FAISS_INDEX_PATH
+
+
+def get_user_profiles_path() -> Path:
+    return USER_PROFILES_PATH
 
 
 @lru_cache(maxsize=1)

@@ -2,11 +2,12 @@ class InventoryAgent:
     def filter_stock(self, products):
         for p in products:
             available = []
+            warehouse_total = sum(warehouse.get("stock", 0) for warehouse in p.get("warehouses", []))
             for index, item in enumerate(p["search_results"]):
-                stock_count = max(1, 12 - (p["id"] * 2 + index * 3))
+                stock_count = max(1, warehouse_total // max(len(p["search_results"]), 1) - index * 2)
                 enriched_item = item.copy()
                 enriched_item["stock_count"] = stock_count
-                enriched_item["stock_status"] = "现货" if stock_count > 3 else "库存紧张"
+                enriched_item["stock_status"] = "现货" if stock_count > 8 else "库存紧张"
                 available.append(enriched_item)
 
             p["search_results"] = available

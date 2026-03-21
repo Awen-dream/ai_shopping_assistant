@@ -69,8 +69,10 @@ class Retriever:
             product.get('name', ''),
             product.get('description', ''),
             product.get('category', ''),
+            product.get('subcategory', ''),
             product.get('brand', ''),
             ' '.join(product.get('tags', [])),
+            product.get('promotion_tag', ''),
         ]
         return ' '.join(part for part in fields if part)
 
@@ -153,6 +155,8 @@ class QueryContextBuilder:
             "preferred_brand": preferred_brand,
             "budget_range": user_profile.get("budget_range", [0, 999999]),
             "interests": interests,
+            "preferred_categories": user_profile.get("preferred_categories", []),
+            "price_sensitivity": user_profile.get("price_sensitivity", "medium"),
             "terms": list(dict.fromkeys(term for term in terms if term)),
         }
 
@@ -230,6 +234,9 @@ class Ranker:
         budget_match = 1 if budget_low <= product.get("price", 0) <= budget_high else 0
         rating_score = min(product.get("rating", 0) / 5.0, 1.0)
         interest_score = min(len(matched_interests) / max(len(query_context["interests"]), 1), 1.0) if query_context["interests"] else 0.0
+        sales_score = min(product.get("monthly_sales", 0) / 10000.0, 1.0)
+        promotion_score = 1.0 if product.get("promotion_tag") else 0.0
+        inventory_score = min(product.get("inventory_total", 0) / 200.0, 1.0)
 
         detail = {
             "matched_terms": matched_terms,
@@ -239,6 +246,9 @@ class Ranker:
             "budget_match": bool(budget_match),
             "interest_score": interest_score,
             "rating_score": rating_score,
+            "sales_score": sales_score,
+            "promotion_score": promotion_score,
+            "inventory_score": inventory_score,
             "keyword_score": keyword_score,
             "vector_score": vector_score,
         }
@@ -253,7 +263,10 @@ class Ranker:
             self.weights["category"] * (1.0 if detail["category_match"] else 0.0) +
             self.weights["brand"] * (1.0 if detail["brand_match"] else 0.0) +
             self.weights["budget"] * (1.0 if detail["budget_match"] else 0.0) +
-            self.weights["rating"] * detail["rating_score"]
+            self.weights["rating"] * detail["rating_score"] +
+            0.04 * detail["sales_score"] +
+            0.03 * detail["promotion_score"] +
+            0.02 * detail["inventory_score"]
         )
         return score, detail
 
@@ -289,6 +302,10 @@ class ReasonGenerator:
             reasons.append(f"命中诉求：{'/'.join(detail['matched_interests'])}")
         if detail.get("budget_match"):
             reasons.append("价格在预算范围内")
+        if product.get("promotion_tag"):
+            reasons.append(f"当前活动：{product.get('promotion_tag')}")
+        if product.get("monthly_sales", 0) >= 3000:
+            reasons.append(f"近月销量 {product.get('monthly_sales')}")
         if product.get("rating", 0) >= 4.8:
             reasons.append(f"评分 {product.get('rating')}")
         if detail.get("matched_terms"):
@@ -366,6 +383,14 @@ class RecommendationAgent:
             ]
             if brand_matched:
                 candidates = brand_matched
+
+        if query_context["preferred_categories"] and not query_context["category"]:
+            preferred_category_candidates = [
+                item for item in candidates
+                if item["product"].get("category") in query_context["preferred_categories"]
+            ]
+            if preferred_category_candidates:
+                candidates = preferred_category_candidates
 
         return candidates
 

@@ -25,8 +25,10 @@ def build_faiss_index():
                 product.get("name", ""),
                 product.get("description", ""),
                 product.get("category", ""),
+                product.get("subcategory", ""),
                 product.get("brand", ""),
                 " ".join(product.get("tags", [])),
+                product.get("promotion_tag", ""),
             ]
         ).strip()
         for product in products

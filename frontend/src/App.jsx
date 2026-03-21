@@ -4,13 +4,14 @@ import { fetchImageResults, fetchMultiAgentResults } from "./services/api";
 export default function App() {
   const [query, setQuery] = useState("");
   const [file, setFile] = useState(null);
+  const [userId, setUserId] = useState("");
   const [results, setResults] = useState([]);
 
   // 文字搜索
   const handleSearch = async () => {
     if (!query) return;
     try {
-      const data = await fetchMultiAgentResults(query);
+      const data = await fetchMultiAgentResults(query, userId);
       // 去重商品，避免重复 id
       const uniqueResults = [];
       const seen = new Set();
@@ -30,7 +31,7 @@ export default function App() {
   const handleImageSearch = async () => {
     if (!file) return;
     try {
-      const data = await fetchImageResults(file);
+      const data = await fetchImageResults(file, userId);
       const uniqueResults = [];
       const seen = new Set();
       data.results.forEach((p) => {
@@ -51,6 +52,13 @@ export default function App() {
 
       {/* 文字搜索 */}
       <div className="flex mb-2 gap-2">
+        <input
+          type="text"
+          value={userId}
+          onChange={(e) => setUserId(e.target.value)}
+          placeholder="可选: 用户 ID，如 demo_apple_fan"
+          className="border p-2 rounded w-72"
+        />
         <input
           type="text"
           value={query}
@@ -86,12 +94,19 @@ export default function App() {
         {results.map((p, idx) => (
           <div key={`${p.id}-${idx}`} className="border p-4 rounded shadow">
             <div className="font-bold text-lg mb-1">{p.name}</div>
+            <div className="text-sm text-gray-500 mb-1">
+              {p.brand} · {p.category}
+              {p.subcategory ? ` · ${p.subcategory}` : ""}
+            </div>
             <div className="text-sm text-gray-600 mb-2">{p.reason}</div>
             {p.match_score != null && (
               <div className="text-xs text-gray-500 mb-2">
                 匹配分: {p.match_score}
               </div>
             )}
+            <div className="text-xs text-gray-500 mb-2">
+              月销 {p.monthly_sales ?? "-"} · {p.promotion_tag || "常规价"} · 总库存 {p.inventory_total ?? "-"}
+            </div>
 
             {p.best_offer && (
               <div className="mb-3 rounded border bg-gray-50 p-2">

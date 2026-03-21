@@ -10,8 +10,9 @@ class SearchAgent:
             base_price = p["price"]
             p["search_results"] = []
             for rule in store_rules:
+                promotion_boost = 0.01 if p.get("promotion_tag") else 0.0
                 list_price = round(base_price * rule["list_multiplier"], 2)
-                sale_price = round(base_price * rule["sale_multiplier"], 2)
+                sale_price = round(base_price * max(rule["sale_multiplier"] - promotion_boost, 0.85), 2)
                 p["search_results"].append({
                     "store": rule["store"],
                     "product_id": p["id"],
