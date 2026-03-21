@@ -8,7 +8,9 @@ from fastapi import APIRouter, File, Form, Query, UploadFile
 from pydantic import BaseModel
 
 from .multi_agent_coordinator import MultiAgentCoordinator
+from .services.product_service import list_products
 from .services.user_profile_service import get_user_profile, upsert_user_profile
+from .services.vector_store_service import rebuild_vector_store
 
 router = APIRouter()
 
@@ -61,3 +63,16 @@ def save_user_profile(user_id: str, payload: UserProfilePayload):
     payload_dict = payload.model_dump(exclude_none=True) if hasattr(payload, "model_dump") else payload.dict(exclude_none=True)
     profile = upsert_user_profile(user_id, payload_dict)
     return {"profile": profile}
+
+
+@router.get("/vector-index/status")
+def read_vector_index_status():
+    return {"status": get_coordinator().get_vector_status()}
+
+
+@router.post("/vector-index/rebuild")
+def rebuild_vector_index(persist: bool = Query(default=True)):
+    status = rebuild_vector_store(list_products(), persist=persist)
+    get_coordinator.cache_clear()
+    refreshed_status = get_coordinator().get_vector_status()
+    return {"status": status, "active_status": refreshed_status}

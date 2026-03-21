@@ -70,3 +70,13 @@ def test_user_profile_crud_roundtrip():
     assert read_response.status_code == 200
     read_profile = read_response.json()["profile"]
     assert read_profile["city"] == "Suzhou"
+
+
+def test_vector_index_status_endpoint_returns_status():
+    response = client.get("/vector-index/status")
+
+    assert response.status_code == 200
+    payload = response.json()["status"]
+    assert "backend" in payload
+    assert "ready" in payload
+    assert "load_source" in payload

@@ -20,6 +20,9 @@ except ImportError:
     faiss = None
 
 
+_RUNTIME_VECTOR_STORE_OVERRIDE = None
+
+
 def build_product_text(product: dict) -> str:
     fields = [
         product.get("name", ""),
@@ -46,9 +49,20 @@ class BaseVectorStore:
         self.model = None
         self.index = None
         self.ready = False
+        self.load_source = "disabled"
 
     def search(self, query: str, topk: int = 20) -> list[tuple[dict, float]]:
         return []
+
+    def status(self) -> dict:
+        return {
+            "backend": self.backend_name,
+            "ready": self.ready,
+            "load_source": self.load_source,
+            "product_count": len(self.products),
+            "persisted_index_exists": get_product_index_path().exists(),
+            "persisted_metadata_exists": get_product_index_metadata_path().exists(),
+        }
 
 
 class DisabledVectorStore(BaseVectorStore):
@@ -66,10 +80,12 @@ class BaseFaissVectorStore(BaseVectorStore):
     def __init__(self, products: List[dict]):
         super().__init__(products)
         if faiss is None:
+            self.load_source = "faiss_unavailable"
             return
 
         self.model = get_sentence_transformer()
         if self.model is None:
+            self.load_source = "model_unavailable"
             return
 
         strategy = get_vector_index_strategy()
@@ -86,6 +102,7 @@ class BaseFaissVectorStore(BaseVectorStore):
         index_path = get_product_index_path()
         metadata_path = get_product_index_metadata_path()
         if not index_path.exists() or not metadata_path.exists():
+            self.load_source = "persisted_missing"
             return False
 
         try:
@@ -94,14 +111,18 @@ class BaseFaissVectorStore(BaseVectorStore):
 
             expected_ids = [product["id"] for product in self.products]
             if metadata.get("product_ids") != expected_ids:
+                self.load_source = "persisted_metadata_mismatch"
                 return False
             if metadata.get("embedding_model") != get_embedding_model():
+                self.load_source = "persisted_model_mismatch"
                 return False
 
             self.index = faiss.read_index(str(index_path))
+            self.load_source = "persisted"
             return True
         except Exception:
             self.index = None
+            self.load_source = "persisted_load_failed"
             return False
 
     def _rebuild_runtime_index(self, write_to_disk: bool = False) -> bool:
@@ -111,11 +132,13 @@ class BaseFaissVectorStore(BaseVectorStore):
             index = faiss.IndexFlatIP(embeddings.shape[1])
             index.add(embeddings)
             self.index = index
+            self.load_source = "rebuilt_and_persisted" if write_to_disk else "rebuilt_runtime"
             if write_to_disk:
                 self.persist()
             return True
         except Exception:
             self.index = None
+            self.load_source = "rebuild_failed"
             return False
 
     def persist(self):
@@ -163,12 +186,30 @@ class MemoryFaissVectorStore(BaseFaissVectorStore):
 
         self.model = get_sentence_transformer()
         if self.model is None:
+            self.load_source = "model_unavailable"
             return
 
         self.ready = self._rebuild_runtime_index(write_to_disk=False)
 
 
+def _same_products(products: List[dict], other_products: List[dict]) -> bool:
+    return [product.get("id") for product in products] == [product.get("id") for product in other_products]
+
+
+def set_runtime_vector_store_override(store: BaseVectorStore | None):
+    global _RUNTIME_VECTOR_STORE_OVERRIDE
+    _RUNTIME_VECTOR_STORE_OVERRIDE = store
+
+
+def get_runtime_vector_store_override():
+    return _RUNTIME_VECTOR_STORE_OVERRIDE
+
+
 def create_vector_store(products: List[dict]) -> BaseVectorStore:
+    runtime_override = get_runtime_vector_store_override()
+    if runtime_override is not None and _same_products(products, runtime_override.products):
+        return runtime_override
+
     if not is_vector_search_enabled():
         return DisabledVectorStore(products)
 
@@ -184,3 +225,34 @@ def create_vector_store(products: List[dict]) -> BaseVectorStore:
 
     # Unknown backend falls back safely for local development.
     return DisabledVectorStore(products)
+
+
+def rebuild_vector_store(products: List[dict], persist: bool = True) -> dict:
+    if faiss is None:
+        raise RuntimeError("faiss-cpu is not available in the current environment.")
+
+    backend = get_vector_store_backend()
+    if backend == "local_faiss":
+        store = FaissVectorStore(products)
+        if store.model is None:
+            raise RuntimeError("Embedding model unavailable for local FAISS rebuild.")
+        if not store._rebuild_runtime_index(write_to_disk=persist):
+            raise RuntimeError("Failed to rebuild local FAISS index.")
+        if persist:
+            set_runtime_vector_store_override(None)
+        else:
+            set_runtime_vector_store_override(store)
+        return store.status()
+
+    if backend in {"memory", "runtime_faiss", "in_memory"}:
+        store = MemoryFaissVectorStore(products)
+        if not store.ready:
+            raise RuntimeError("Failed to rebuild in-memory vector index.")
+        set_runtime_vector_store_override(store)
+        return store.status()
+
+    if backend in {"disabled", "off", "none"}:
+        set_runtime_vector_store_override(None)
+        return DisabledVectorStore(products).status()
+
+    raise RuntimeError(f"Vector rebuild is not implemented for backend '{backend}'.")

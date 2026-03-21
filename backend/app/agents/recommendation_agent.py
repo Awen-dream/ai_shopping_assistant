@@ -392,6 +392,9 @@ class RecommendationAgent:
 
         return results
 
+    def get_vector_status(self):
+        return self.vector_retriever.vector_store.status()
+
 # =========================
 # Usage Example
 # =========================

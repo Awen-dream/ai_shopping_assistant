@@ -74,3 +74,6 @@ class MultiAgentCoordinator:
             })
 
         return safe_products
+
+    def get_vector_status(self):
+        return self.recommend_agent.get_vector_status()

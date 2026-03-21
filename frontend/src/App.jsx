@@ -1,11 +1,38 @@
-import { useState } from "react";
-import { fetchImageResults, fetchMultiAgentResults } from "./services/api";
+import { useEffect, useState } from "react";
+import {
+  fetchImageResults,
+  fetchMultiAgentResults,
+  fetchVectorIndexStatus,
+  rebuildVectorIndex,
+} from "./services/api";
 
 export default function App() {
   const [query, setQuery] = useState("");
   const [file, setFile] = useState(null);
   const [userId, setUserId] = useState("");
   const [results, setResults] = useState([]);
+  const [vectorStatus, setVectorStatus] = useState(null);
+  const [vectorActionLoading, setVectorActionLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadVectorStatus() {
+      try {
+        const data = await fetchVectorIndexStatus();
+        if (!cancelled) {
+          setVectorStatus(data.status);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    loadVectorStatus();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // 文字搜索
   const handleSearch = async () => {
@@ -46,9 +73,47 @@ export default function App() {
     }
   };
 
+  const handleRebuildVectorIndex = async (persist) => {
+    setVectorActionLoading(true);
+    try {
+      const data = await rebuildVectorIndex(persist);
+      setVectorStatus(data.active_status);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setVectorActionLoading(false);
+    }
+  };
+
   return (
     <div className="p-4 max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">AI Shopping Assistant</h1>
+
+      {vectorStatus && (
+        <div className="mb-4 rounded border bg-gray-50 p-3 text-sm">
+          <div className="font-semibold mb-1">本机向量索引</div>
+          <div>后端: {vectorStatus.backend}</div>
+          <div>状态: {vectorStatus.ready ? "ready" : "not ready"}</div>
+          <div>来源: {vectorStatus.load_source}</div>
+          <div>商品数: {vectorStatus.product_count}</div>
+          <div className="mt-2 flex gap-2">
+            <button
+              onClick={() => handleRebuildVectorIndex(true)}
+              className="bg-black text-white px-3 py-1 rounded disabled:opacity-50"
+              disabled={vectorActionLoading}
+            >
+              重建并落盘
+            </button>
+            <button
+              onClick={() => handleRebuildVectorIndex(false)}
+              className="border px-3 py-1 rounded disabled:opacity-50"
+              disabled={vectorActionLoading}
+            >
+              仅重建内存索引
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 文字搜索 */}
       <div className="flex mb-2 gap-2">
