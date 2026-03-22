@@ -8,7 +8,7 @@ from fastapi import APIRouter, File, Form, Query, UploadFile
 from pydantic import BaseModel
 
 from .multi_agent_coordinator import MultiAgentCoordinator
-from .services.product_service import create_product, list_products, upsert_product
+from .services.product_service import create_product, delete_product, list_products, upsert_product
 from .services.user_profile_service import get_user_profile, upsert_user_profile
 from .services.vector_store_service import rebuild_vector_store, sync_vector_store_after_product_change
 
@@ -106,6 +106,14 @@ def save_catalog_product(product_id: int, payload: ProductPayload):
     sync_status = sync_vector_store_after_product_change(list_products())
     get_coordinator.cache_clear()
     return {"product": product, "vector_status": sync_status}
+
+
+@router.delete("/products/{product_id}")
+def remove_catalog_product(product_id: int):
+    deleted = delete_product(product_id)
+    sync_status = sync_vector_store_after_product_change(list_products())
+    get_coordinator.cache_clear()
+    return {"product": deleted, "vector_status": sync_status}
 
 
 @router.get("/vector-index/status")

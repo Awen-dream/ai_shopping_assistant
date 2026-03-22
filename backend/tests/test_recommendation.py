@@ -1,3 +1,4 @@
+from app.agents.intent_agent import IntentAgent
 from app.agents.recommendation_agent import RecommendationAgent
 
 
@@ -60,3 +61,33 @@ def test_preferred_categories_affect_candidates_when_query_has_no_category():
     )[0]
 
     assert result["category"] == "笔记本"
+
+
+def test_intent_agent_extracts_stage3_structured_fields():
+    agent = IntentAgent(llm=None)
+
+    intent = agent.parse_intent("学生用 轻薄本 预算6000 尽快到货 要性价比高一些")
+
+    assert intent["scenario"] == "学生"
+    assert intent["sort_preference"] == "price"
+    assert intent["urgency"] == "urgent"
+    assert intent["price_sensitivity"] == "high"
+    assert intent["category"] == "笔记本"
+
+
+def test_recommendation_tracks_required_feature_matches():
+    agent = RecommendationAgent()
+
+    result = agent.recommend(
+        "通勤降噪耳机",
+        {
+            "budget_range": [0, 4000],
+            "interests": ["降噪"],
+            "required_features": ["降噪", "轻薄"],
+            "scenario": "通勤",
+            "category": "耳机",
+        },
+    )[0]
+
+    assert result["category"] == "耳机"
+    assert result["matched_features"]["matched_required_features"]

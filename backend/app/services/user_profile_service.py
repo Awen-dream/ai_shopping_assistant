@@ -13,6 +13,11 @@ DEFAULT_USER_PROFILE = {
     "category": "",
     "preferred_categories": [],
     "price_sensitivity": "medium",
+    "scenario": "",
+    "sort_preference": "balanced",
+    "urgency": "normal",
+    "fulfillment_preference": "standard",
+    "required_features": [],
     "city": "",
 }
 
@@ -50,6 +55,10 @@ def _normalize_profile(user_id: str, payload: dict | None) -> dict:
     if isinstance(preferred_categories, str):
         preferred_categories = [preferred_categories]
 
+    required_features = normalized.get("required_features") or []
+    if isinstance(required_features, str):
+        required_features = [required_features]
+
     budget_range = normalized.get("budget_range") or DEFAULT_USER_PROFILE["budget_range"][:]
     if not isinstance(budget_range, list) or len(budget_range) != 2:
         budget_range = DEFAULT_USER_PROFILE["budget_range"][:]
@@ -61,6 +70,11 @@ def _normalize_profile(user_id: str, payload: dict | None) -> dict:
     normalized["preferred_categories"] = preferred_categories
     normalized["category"] = normalized.get("category") or ""
     normalized["price_sensitivity"] = normalized.get("price_sensitivity") or "medium"
+    normalized["scenario"] = normalized.get("scenario") or ""
+    normalized["sort_preference"] = normalized.get("sort_preference") or "balanced"
+    normalized["urgency"] = normalized.get("urgency") or "normal"
+    normalized["fulfillment_preference"] = normalized.get("fulfillment_preference") or "standard"
+    normalized["required_features"] = required_features
     normalized["city"] = normalized.get("city") or ""
     normalized["updated_at"] = normalized.get("updated_at") or datetime.now(timezone.utc).isoformat()
     return normalized
@@ -112,6 +126,9 @@ def merge_profiles(base_profile: dict | None, query_profile: dict | None) -> dic
     merged["preferred_categories"] = list(dict.fromkeys(
         (base_profile or {}).get("preferred_categories", []) + (query_profile or {}).get("preferred_categories", [])
     ))
+    merged["required_features"] = list(dict.fromkeys(
+        (base_profile or {}).get("required_features", []) + (query_profile or {}).get("required_features", [])
+    ))
 
     query_budget = (query_profile or {}).get("budget_range")
     merged["budget_range"] = query_budget if query_budget else (base_profile or {}).get(
@@ -122,5 +139,13 @@ def merge_profiles(base_profile: dict | None, query_profile: dict | None) -> dic
     merged["price_sensitivity"] = (query_profile or {}).get("price_sensitivity") or (
         base_profile or {}
     ).get("price_sensitivity", "medium")
+    merged["scenario"] = (query_profile or {}).get("scenario") or (base_profile or {}).get("scenario", "")
+    merged["sort_preference"] = (query_profile or {}).get("sort_preference") or (
+        base_profile or {}
+    ).get("sort_preference", "balanced")
+    merged["urgency"] = (query_profile or {}).get("urgency") or (base_profile or {}).get("urgency", "normal")
+    merged["fulfillment_preference"] = (query_profile or {}).get("fulfillment_preference") or (
+        base_profile or {}
+    ).get("fulfillment_preference", "standard")
     merged["city"] = (base_profile or {}).get("city") or ""
     return merged

@@ -20,6 +20,14 @@ for category, keywords in INTENT_CATEGORY_KEYWORDS.items():
     CATEGORY_KEYWORDS.setdefault(category, [])
     CATEGORY_KEYWORDS[category] = list(dict.fromkeys(CATEGORY_KEYWORDS[category] + keywords))
 
+SCENARIO_MATCH_KEYWORDS = {
+    "学生": ["学生", "校园", "性价比", "办公"],
+    "商务": ["商务", "办公", "差旅", "耐用"],
+    "通勤": ["轻薄", "便携", "降噪", "续航"],
+    "摄影": ["拍照", "影像", "长焦"],
+    "游戏": ["高性能", "性能", "流畅"],
+}
+
 def classify_intent_rule(query: str) -> str:
     q = query.lower()
     for cat, kws in CATEGORY_KEYWORDS.items():
@@ -106,6 +114,11 @@ class QueryContextBuilder:
         category = user_profile.get("category") or classify_intent_rule(query) or ""
         preferred_brand = user_profile.get("preferred_brand") or []
         interests = user_profile.get("interests") or []
+        required_features = user_profile.get("required_features") or []
+        scenario = user_profile.get("scenario") or ""
+        sort_preference = user_profile.get("sort_preference") or "balanced"
+        urgency = user_profile.get("urgency") or "normal"
+        fulfillment_preference = user_profile.get("fulfillment_preference") or "standard"
 
         terms = Retriever._extract_terms(query)
         if category:
@@ -114,6 +127,10 @@ class QueryContextBuilder:
         for interest in interests:
             terms.append(interest.lower())
             terms.extend(INTEREST_KEYWORDS.get(interest, []))
+        if scenario:
+            terms.append(scenario.lower())
+            terms.extend(SCENARIO_MATCH_KEYWORDS.get(scenario, []))
+        terms.extend(feature.lower() for feature in required_features)
 
         return {
             "raw_query": query,
@@ -121,8 +138,13 @@ class QueryContextBuilder:
             "preferred_brand": preferred_brand,
             "budget_range": user_profile.get("budget_range", [0, 999999]),
             "interests": interests,
+            "required_features": required_features,
             "preferred_categories": user_profile.get("preferred_categories", []),
             "price_sensitivity": user_profile.get("price_sensitivity", "medium"),
+            "scenario": scenario,
+            "sort_preference": sort_preference,
+            "urgency": urgency,
+            "fulfillment_preference": fulfillment_preference,
             "terms": list(dict.fromkeys(term for term in terms if term)),
         }
 
@@ -193,6 +215,10 @@ class Ranker:
         product_text = Retriever._product_text(product).lower()
         matched_terms = [term for term in query_context["terms"] if term in product_text]
         matched_interests = [interest for interest in query_context["interests"] if interest in product_text]
+        matched_required_features = [
+            feature for feature in query_context["required_features"]
+            if feature.lower() in product_text
+        ]
 
         category_match = 1 if query_context["category"] and product.get("category") == query_context["category"] else 0
         brand_match = 1 if query_context["preferred_brand"] and product.get("brand") in query_context["preferred_brand"] else 0
@@ -200,21 +226,53 @@ class Ranker:
         budget_match = 1 if budget_low <= product.get("price", 0) <= budget_high else 0
         rating_score = min(product.get("rating", 0) / 5.0, 1.0)
         interest_score = min(len(matched_interests) / max(len(query_context["interests"]), 1), 1.0) if query_context["interests"] else 0.0
+        required_feature_score = (
+            min(len(matched_required_features) / max(len(query_context["required_features"]), 1), 1.0)
+            if query_context["required_features"] else 0.0
+        )
         sales_score = min(product.get("monthly_sales", 0) / 10000.0, 1.0)
         promotion_score = 1.0 if product.get("promotion_tag") else 0.0
         inventory_score = min(product.get("inventory_total", 0) / 200.0, 1.0)
+        scenario_score = 0.0
+        if query_context["scenario"]:
+            scenario_hits = [
+                keyword for keyword in SCENARIO_MATCH_KEYWORDS.get(query_context["scenario"], [])
+                if keyword.lower() in product_text
+            ]
+            scenario_score = min(len(scenario_hits) / max(len(SCENARIO_MATCH_KEYWORDS.get(query_context["scenario"], [])), 1), 1.0)
+        budget_ceiling = max(budget_high, 1)
+        affordability_score = max(0.0, min(1.0, 1 - (product.get("price", 0) / budget_ceiling))) if budget_high else 0.0
+        portability_score = 1.0 if any(keyword in product_text for keyword in ["轻薄", "轻便", "便携"]) else 0.0
+        performance_score = 1.0 if any(keyword in product_text for keyword in ["高性能", "旗舰", "流畅"]) else 0.0
+
+        sort_bonus = 0.0
+        if query_context["sort_preference"] == "price":
+            sort_bonus = affordability_score
+        elif query_context["sort_preference"] == "portability":
+            sort_bonus = portability_score
+        elif query_context["sort_preference"] == "performance":
+            sort_bonus = max(performance_score, rating_score)
+        elif query_context["sort_preference"] == "camera":
+            sort_bonus = 1.0 if "拍照" in product_text or "影像" in product_text else 0.0
+        elif query_context["sort_preference"] == "battery":
+            sort_bonus = 1.0 if "续航" in product_text else 0.0
 
         detail = {
             "matched_terms": matched_terms,
             "matched_interests": matched_interests,
+            "matched_required_features": matched_required_features,
             "category_match": bool(category_match),
             "brand_match": bool(brand_match),
             "budget_match": bool(budget_match),
             "interest_score": interest_score,
+            "required_feature_score": required_feature_score,
             "rating_score": rating_score,
             "sales_score": sales_score,
             "promotion_score": promotion_score,
             "inventory_score": inventory_score,
+            "scenario_score": scenario_score,
+            "affordability_score": affordability_score,
+            "sort_bonus": sort_bonus,
             "keyword_score": keyword_score,
             "vector_score": vector_score,
         }
@@ -222,6 +280,12 @@ class Ranker:
 
     def score(self, product, query_context, keyword_score, vector_score):
         detail = self._score_product(product, query_context, keyword_score, vector_score)
+        price_sensitivity_bonus = 0.0
+        if query_context["price_sensitivity"] == "high":
+            price_sensitivity_bonus = detail["affordability_score"] * 0.08
+        elif query_context["price_sensitivity"] == "low":
+            price_sensitivity_bonus = detail["rating_score"] * 0.03
+
         score = (
             self.weights["keyword"] * keyword_score +
             self.weights["vector"] * vector_score +
@@ -230,9 +294,13 @@ class Ranker:
             self.weights["brand"] * (1.0 if detail["brand_match"] else 0.0) +
             self.weights["budget"] * (1.0 if detail["budget_match"] else 0.0) +
             self.weights["rating"] * detail["rating_score"] +
+            0.06 * detail["required_feature_score"] +
+            0.04 * detail["scenario_score"] +
+            0.04 * detail["sort_bonus"] +
             0.04 * detail["sales_score"] +
             0.03 * detail["promotion_score"] +
-            0.02 * detail["inventory_score"]
+            0.02 * detail["inventory_score"] +
+            price_sensitivity_bonus
         )
         return score, detail
 
@@ -266,6 +334,10 @@ class ReasonGenerator:
             reasons.append(f"命中品牌偏好 {product.get('brand')}")
         if detail.get("matched_interests"):
             reasons.append(f"命中诉求：{'/'.join(detail['matched_interests'])}")
+        if detail.get("matched_required_features"):
+            reasons.append(f"核心特性匹配：{'/'.join(detail['matched_required_features'][:2])}")
+        if user_profile.get("scenario") and detail.get("scenario_score", 0) > 0:
+            reasons.append(f"适合{user_profile.get('scenario')}场景")
         if detail.get("budget_match"):
             reasons.append("价格在预算范围内")
         if product.get("promotion_tag"):
@@ -358,6 +430,14 @@ class RecommendationAgent:
             if preferred_category_candidates:
                 candidates = preferred_category_candidates
 
+        budget_low, budget_high = query_context["budget_range"]
+        budget_matched = [
+            item for item in candidates
+            if budget_low <= item["product"].get("price", 0) <= budget_high
+        ]
+        if budget_matched:
+            candidates = budget_matched
+
         return candidates
 
     def recommend(self, query: str, user_profile=None, topk=5):
@@ -378,9 +458,12 @@ class RecommendationAgent:
             matched_features = {
                 "matched_terms": detail.get("matched_terms", [])[:4],
                 "matched_interests": detail.get("matched_interests", []),
+                "matched_required_features": detail.get("matched_required_features", []),
                 "category_match": detail.get("category_match", False),
                 "brand_match": detail.get("brand_match", False),
                 "budget_match": detail.get("budget_match", False),
+                "scenario_score": detail.get("scenario_score", 0.0),
+                "sort_bonus": detail.get("sort_bonus", 0.0),
             }
 
             p = product

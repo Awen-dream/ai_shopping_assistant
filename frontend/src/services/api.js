@@ -47,3 +47,47 @@ export async function rebuildVectorIndex(persist = true) {
   );
   return parseJsonResponse(response);
 }
+
+export async function fetchProducts() {
+  const response = await fetch(`${API_BASE_URL}/products`);
+  return parseJsonResponse(response);
+}
+
+export async function createProduct(payload) {
+  const response = await fetch(`${API_BASE_URL}/products`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return parseJsonResponse(response);
+}
+
+export async function updateProduct(productId, payload) {
+  const response = await fetch(`${API_BASE_URL}/products/${productId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return parseJsonResponse(response);
+}
+
+export async function deleteProduct(productId) {
+  const response = await fetch(`${API_BASE_URL}/products/${productId}`, {
+    method: "DELETE",
+  });
+  return parseJsonResponse(response);
+}
+
+export async function fetchUserProfile(userId) {
+  const response = await fetch(`${API_BASE_URL}/user-profiles/${encodeURIComponent(userId)}`);
+  return parseJsonResponse(response);
+}
+
+export async function saveUserProfile(userId, payload) {
+  const response = await fetch(`${API_BASE_URL}/user-profiles/${encodeURIComponent(userId)}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return parseJsonResponse(response);
+}

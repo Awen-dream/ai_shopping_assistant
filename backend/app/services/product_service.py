@@ -85,6 +85,10 @@ def _normalize_product(product_id: int, payload: dict | None) -> dict:
     normalized["monthly_sales"] = int(normalized.get("monthly_sales", 0))
     normalized["promotion_tag"] = normalized.get("promotion_tag", "")
     normalized["inventory_total"] = int(normalized.get("inventory_total", 0))
+    if not normalized_warehouses and normalized["inventory_total"] > 0:
+        normalized_warehouses = [{"name": "默认仓", "stock": normalized["inventory_total"]}]
+    if normalized["inventory_total"] <= 0 and normalized_warehouses:
+        normalized["inventory_total"] = sum(warehouse["stock"] for warehouse in normalized_warehouses)
     normalized["warehouses"] = normalized_warehouses
     return normalized
 
@@ -123,3 +127,14 @@ def upsert_product(product_id: int, payload: dict) -> dict:
     _write_products(products)
     refresh_products_cache()
     return normalized
+
+
+def delete_product(product_id: int) -> dict | None:
+    products = list_products().copy()
+    for index, product in enumerate(products):
+        if product["id"] == product_id:
+            deleted = products.pop(index)
+            _write_products(products)
+            refresh_products_cache()
+            return deleted
+    return None

@@ -50,6 +50,21 @@ def test_query_uses_persisted_user_profile():
     assert payload["results"][0]["price"] <= 6000
 
 
+def test_stage3_price_and_inventory_fields_are_exposed():
+    response = client.get(
+        "/multi-agent-task",
+        params={"q": "学生 预算6000 轻薄本 尽快到货"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    best_offer = payload["results"][0]["best_offer"]
+    assert "promotion_applied" in best_offer
+    assert "coupon_discount" in best_offer
+    assert "fulfillment_type" in best_offer
+    assert "purchase_limit" in best_offer
+
+
 def test_user_profile_crud_roundtrip():
     save_response = client.put(
         "/user-profiles/test_stage2_user",

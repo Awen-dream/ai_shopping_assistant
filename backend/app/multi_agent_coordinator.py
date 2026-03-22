@@ -38,10 +38,10 @@ class MultiAgentCoordinator:
         searched = self.search_agent.search(recommended)
 
         # 3️⃣ 比价
-        priced = self.price_agent.compare(searched)
+        priced = self.price_agent.compare(searched, user_profile=user_profile)
 
         # 4️⃣ 检查库存
-        stocked = self.inventory_agent.filter_stock(priced)
+        stocked = self.inventory_agent.filter_stock(priced, user_profile=user_profile)
 
         # 去重：按商品 id
         seen = set()
