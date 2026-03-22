@@ -26,12 +26,12 @@ class PriceAgent:
             ratio += 0.01
         if price_sensitivity == "high":
             ratio += 0.015
-        elif price_sensitivity == "low" and offer.get("store") == "Apple/Sony Official":
+        elif price_sensitivity == "low" and offer.get("merchant_type") == "official":
             ratio += 0.005
 
-        if offer.get("store") == "JD Mall" and product.get("category") in {"手机", "耳机"}:
+        if offer.get("channel") == "jd" and product.get("category") in {"手机", "耳机"}:
             ratio += 0.005
-        if offer.get("store") == "Tmall" and product.get("brand") in {"Lenovo", "Xiaomi"}:
+        if offer.get("channel") == "tmall" and product.get("brand") in {"Lenovo", "Xiaomi"}:
             ratio += 0.005
 
         return min(ratio, 0.12)
@@ -82,7 +82,7 @@ class PriceAgent:
 
             sorted_results = sorted(
                 priced_results,
-                key=lambda item: (item["price_score"], item["shipping_days"], item["store"]),
+                key=lambda item: (item["price_score"], item["shipping_days"], -item.get("service_score", 0), item["store"]),
             )
             product["search_results"] = sorted_results
             product["best_offer"] = sorted_results[0] if sorted_results else None

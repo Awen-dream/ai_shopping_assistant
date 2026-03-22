@@ -35,7 +35,7 @@ class MultiAgentCoordinator:
         #recommended = self.recommend_agent.recommend(query, user_profile)
 
         # 2️⃣ 搜索匹配商品（多商家）
-        searched = self.search_agent.search(recommended)
+        searched = self.search_agent.search(recommended, user_profile=user_profile)
 
         # 3️⃣ 比价
         priced = self.price_agent.compare(searched, user_profile=user_profile)

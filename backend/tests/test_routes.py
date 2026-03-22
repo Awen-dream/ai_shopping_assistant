@@ -48,6 +48,7 @@ def test_query_uses_persisted_user_profile():
     assert payload["results"]
     assert payload["results"][0]["category"] == "笔记本"
     assert payload["results"][0]["price"] <= 6000
+    assert payload["results"][0]["best_offer"]["fulfillment_warehouse"] == "华东仓"
 
 
 def test_stage3_price_and_inventory_fields_are_exposed():
@@ -63,6 +64,8 @@ def test_stage3_price_and_inventory_fields_are_exposed():
     assert "coupon_discount" in best_offer
     assert "fulfillment_type" in best_offer
     assert "purchase_limit" in best_offer
+    assert "strategy_tags" in best_offer
+    assert "merchant_type" in best_offer
 
 
 def test_user_profile_crud_roundtrip():

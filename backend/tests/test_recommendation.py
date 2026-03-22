@@ -1,5 +1,6 @@
 from app.agents.intent_agent import IntentAgent
 from app.agents.recommendation_agent import RecommendationAgent
+from app.agents.search_agent import SearchAgent
 
 
 def test_recommendation_filters_earphones():
@@ -91,3 +92,17 @@ def test_recommendation_tracks_required_feature_matches():
 
     assert result["category"] == "耳机"
     assert result["matched_features"]["matched_required_features"]
+
+
+def test_search_agent_applies_city_and_scenario_strategy():
+    recommender = RecommendationAgent()
+    laptop = next(product for product in recommender.products if product["name"] == "Lenovo Xiaoxin Pro 14")
+
+    search_results = SearchAgent().search(
+        [laptop.copy()],
+        user_profile={"city": "Hangzhou", "scenario": "学生", "urgency": "urgent", "sort_preference": "price"},
+    )[0]["search_results"]
+    jd_offer = next(item for item in search_results if item["channel"] == "jd")
+
+    assert jd_offer["shipping_days"] == 1
+    assert "学生友好" in jd_offer["strategy_tags"]
