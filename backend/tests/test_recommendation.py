@@ -106,3 +106,24 @@ def test_search_agent_applies_city_and_scenario_strategy():
 
     assert jd_offer["shipping_days"] == 1
     assert "学生友好" in jd_offer["strategy_tags"]
+
+
+def test_student_budget_query_prefers_lenovo_laptop():
+    agent = RecommendationAgent()
+
+    result = agent.recommend(
+        "学生 预算6000 轻薄本",
+        {
+            "budget_range": [0, 6000],
+            "interests": ["办公", "性价比"],
+            "required_features": ["轻薄", "学生"],
+            "scenario": "学生",
+            "sort_preference": "price",
+            "category": "笔记本",
+            "preferred_categories": ["笔记本"],
+            "price_sensitivity": "high",
+        },
+    )[0]
+
+    assert result["name"] == "Lenovo Xiaoxin Pro 14"
+    assert result["matched_features"]["budget_match"] is True

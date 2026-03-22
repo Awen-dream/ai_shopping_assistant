@@ -68,6 +68,51 @@ def test_stage3_price_and_inventory_fields_are_exposed():
     assert "merchant_type" in best_offer
 
 
+def test_commute_headphones_query_returns_fast_delivery_offer():
+    response = client.get(
+        "/multi-agent-task",
+        params={"q": "通勤降噪耳机"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    top_result = payload["results"][0]
+    assert top_result["name"] == "Sony WH-1000XM5"
+    assert "适合通勤场景" in top_result["reason"]
+    assert top_result["best_offer"]["channel"] == "jd"
+    assert top_result["best_offer"]["shipping_days"] == 1
+    assert "通勤快送" in top_result["best_offer"]["strategy_tags"]
+
+
+def test_camera_phone_query_returns_budget_matched_phone():
+    response = client.get(
+        "/multi-agent-task",
+        params={"q": "拍照手机 预算5000"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    top_result = payload["results"][0]
+    assert top_result["name"] == "Xiaomi 14"
+    assert top_result["price"] <= 5000
+    assert "适合摄影场景" in top_result["reason"]
+    assert top_result["best_offer"]["price_label"] in {"活动好价", "大促低价"}
+
+
+def test_brand_query_prefers_apple_laptop_in_budget():
+    response = client.get(
+        "/multi-agent-task",
+        params={"q": "Apple 轻薄笔记本 预算12000"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    top_result = payload["results"][0]
+    assert top_result["name"] == "MacBook Air M3"
+    assert top_result["matched_features"]["brand_match"] is True
+    assert top_result["matched_features"]["budget_match"] is True
+
+
 def test_user_profile_crud_roundtrip():
     save_response = client.put(
         "/user-profiles/test_stage2_user",

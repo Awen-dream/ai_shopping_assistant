@@ -394,5 +394,28 @@
         "stock": 79
       }
     ]
+  },
+  {
+    "name": "QA Demo Headphones",
+    "description": "用于测试的降噪耳机",
+    "category": "耳机",
+    "subcategory": "头戴耳机",
+    "brand": "Sony",
+    "price": 1999.0,
+    "rating": 4.6,
+    "tags": [
+      "降噪",
+      "测试"
+    ],
+    "monthly_sales": 99,
+    "promotion_tag": "测试活动",
+    "inventory_total": 20,
+    "warehouses": [
+      {
+        "name": "华东仓",
+        "stock": 20
+      }
+    ],
+    "id": 13
   }
 ]
