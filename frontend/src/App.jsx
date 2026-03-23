@@ -10,6 +10,7 @@ import {
   fetchVectorIndexStatus,
   rebuildVectorIndex,
   saveUserProfile,
+  sendFeedbackEvent,
   updateProduct,
 } from "./services/api";
 
@@ -123,6 +124,7 @@ export default function App() {
   const [productActionLoading, setProductActionLoading] = useState(false);
   const [profileForm, setProfileForm] = useState(EMPTY_PROFILE_FORM);
   const [profileActionLoading, setProfileActionLoading] = useState(false);
+  const [feedbackLoadingKey, setFeedbackLoadingKey] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -297,6 +299,25 @@ export default function App() {
     }
   };
 
+  const handleFeedback = async (eventType, product) => {
+    const loadingKey = `${eventType}-${product.id}`;
+    setFeedbackLoadingKey(loadingKey);
+    try {
+      const data = await sendFeedbackEvent({
+        event_type: eventType,
+        product_id: product.id,
+        product_name: product.name,
+        query,
+        user_id: userId || undefined,
+      });
+      setAnalyticsSummary(data.summary);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setFeedbackLoadingKey("");
+    }
+  };
+
   return (
     <div className="p-4 max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">AI Shopping Assistant</h1>
@@ -308,6 +329,12 @@ export default function App() {
           <div>文本请求: {analyticsSummary.text_requests}</div>
           <div>图片请求: {analyticsSummary.image_requests}</div>
           <div>平均返回商品数: {analyticsSummary.average_result_count}</div>
+          <div>
+            反馈: 点击 {analyticsSummary.feedback_counts?.click ?? 0} / 收藏 {analyticsSummary.feedback_counts?.favorite ?? 0} / 想下单 {analyticsSummary.feedback_counts?.purchase ?? 0}
+          </div>
+          <div>
+            反馈率: 点击 {((analyticsSummary.feedback_rates?.click_rate ?? 0) * 100).toFixed(0)}% / 收藏 {((analyticsSummary.feedback_rates?.favorite_rate ?? 0) * 100).toFixed(0)}% / 想下单 {((analyticsSummary.feedback_rates?.purchase_rate ?? 0) * 100).toFixed(0)}%
+          </div>
           <div>最近一次请求: {analyticsSummary.last_event_at || "暂无"}</div>
           <div className="mt-2">
             热门查询:{" "}
@@ -319,6 +346,12 @@ export default function App() {
             热门类目:{" "}
             {analyticsSummary.top_categories.length > 0
               ? analyticsSummary.top_categories.map((item) => `${item.name}(${item.count})`).join(" / ")
+              : "暂无"}
+          </div>
+          <div>
+            反馈最高商品:{" "}
+            {analyticsSummary.top_feedback_products?.length > 0
+              ? analyticsSummary.top_feedback_products.map((item) => `${item.name}(${item.count})`).join(" / ")
               : "暂无"}
           </div>
         </div>
@@ -627,6 +660,30 @@ export default function App() {
                 </div>
               </div>
             )}
+
+            <div className="mb-3 flex gap-2">
+              <button
+                onClick={() => handleFeedback("click", p)}
+                className="border px-3 py-1 rounded text-sm"
+                disabled={feedbackLoadingKey === `click-${p.id}`}
+              >
+                记录点击
+              </button>
+              <button
+                onClick={() => handleFeedback("favorite", p)}
+                className="border px-3 py-1 rounded text-sm"
+                disabled={feedbackLoadingKey === `favorite-${p.id}`}
+              >
+                收藏
+              </button>
+              <button
+                onClick={() => handleFeedback("purchase", p)}
+                className="border px-3 py-1 rounded text-sm"
+                disabled={feedbackLoadingKey === `purchase-${p.id}`}
+              >
+                想下单
+              </button>
+            </div>
 
             {/* 多商家价格 */}
             <div className="mb-2">

@@ -175,6 +175,40 @@ def test_analytics_events_capture_image_request():
     assert event["vector_backend"] is not None
 
 
+def test_feedback_event_updates_analytics_summary():
+    search_response = client.get("/multi-agent-task", params={"q": "通勤降噪耳机"})
+    top_result = search_response.json()["results"][0]
+
+    feedback_response = client.post(
+        "/analytics/feedback",
+        json={
+            "event_type": "click",
+            "product_id": top_result["id"],
+            "product_name": top_result["name"],
+            "query": "通勤降噪耳机",
+            "user_id": "demo_student",
+        },
+    )
+
+    assert feedback_response.status_code == 200
+    summary = feedback_response.json()["summary"]
+    assert summary["feedback_counts"]["click"] == 1
+    assert summary["feedback_rates"]["click_rate"] == 1.0
+    assert summary["top_feedback_products"][0]["name"] == "Sony WH-1000XM5"
+
+
+def test_feedback_endpoint_rejects_unknown_event_type():
+    response = client.post(
+        "/analytics/feedback",
+        json={
+            "event_type": "share",
+            "product_id": 1,
+        },
+    )
+
+    assert response.status_code == 400
+
+
 def test_products_endpoint_returns_catalog():
     response = client.get("/products")
 

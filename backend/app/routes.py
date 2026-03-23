@@ -4,14 +4,17 @@ import tempfile
 from functools import lru_cache
 from pathlib import Path
 
-from fastapi import APIRouter, File, Form, Query, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
 from pydantic import BaseModel
 
 from .multi_agent_coordinator import MultiAgentCoordinator
 from .services.analytics_service import (
+    build_feedback_event,
     build_recommendation_event,
     get_analytics_summary,
+    list_feedback_events,
     list_recommendation_events,
+    log_feedback_event,
     log_recommendation_event,
 )
 from .services.product_service import create_product, delete_product, list_products, upsert_product
@@ -54,6 +57,14 @@ class ProductPayload(BaseModel):
     promotion_tag: str | None = None
     inventory_total: int | None = None
     warehouses: list[WarehousePayload] | None = None
+
+
+class FeedbackPayload(BaseModel):
+    event_type: str
+    product_id: int
+    product_name: str | None = None
+    query: str | None = None
+    user_id: str | None = None
 
 
 @router.get("/multi-agent-task")
@@ -161,3 +172,25 @@ def read_analytics_summary():
 @router.get("/analytics/events")
 def read_analytics_events(limit: int = Query(default=10, ge=1, le=100)):
     return {"events": list_recommendation_events(limit=limit)}
+
+
+@router.get("/analytics/feedback")
+def read_feedback_events(limit: int = Query(default=10, ge=1, le=100)):
+    return {"events": list_feedback_events(limit=limit)}
+
+
+@router.post("/analytics/feedback")
+def create_feedback_event(payload: FeedbackPayload):
+    if payload.event_type not in {"click", "favorite", "purchase"}:
+        raise HTTPException(status_code=400, detail="Unsupported feedback event type.")
+
+    payload_dict = payload.model_dump(exclude_none=True) if hasattr(payload, "model_dump") else payload.dict(exclude_none=True)
+    event = build_feedback_event(
+        event_type=payload_dict["event_type"],
+        product_id=payload_dict["product_id"],
+        product_name=payload_dict.get("product_name", ""),
+        query=payload_dict.get("query", ""),
+        user_id=payload_dict.get("user_id"),
+    )
+    log_feedback_event(event)
+    return {"event": event, "summary": get_analytics_summary()}

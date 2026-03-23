@@ -417,5 +417,27 @@
       }
     ],
     "id": 13
+  },
+  {
+    "name": "test",
+    "description": "测试立体耳机",
+    "category": "耳机",
+    "subcategory": "",
+    "brand": "test",
+    "price": 300.0,
+    "rating": 4.0,
+    "tags": [
+      "环绕立体"
+    ],
+    "monthly_sales": 10,
+    "promotion_tag": "",
+    "inventory_total": 100,
+    "warehouses": [
+      {
+        "name": "默认仓",
+        "stock": 100
+      }
+    ],
+    "id": 15
   }
 ]

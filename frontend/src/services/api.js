@@ -45,6 +45,15 @@ export async function fetchAnalyticsSummary() {
   return parseJsonResponse(response);
 }
 
+export async function sendFeedbackEvent(payload) {
+  const response = await fetch(`${API_BASE_URL}/analytics/feedback`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return parseJsonResponse(response);
+}
+
 export async function rebuildVectorIndex(persist = true) {
   const response = await fetch(
     `${API_BASE_URL}/vector-index/rebuild?persist=${persist ? "true" : "false"}`,
