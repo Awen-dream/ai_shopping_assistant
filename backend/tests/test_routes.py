@@ -145,6 +145,36 @@ def test_vector_index_status_endpoint_returns_status():
     assert "load_source" in payload
 
 
+def test_analytics_summary_accumulates_search_events():
+    client.get("/multi-agent-task", params={"q": "通勤降噪耳机"})
+    client.get("/multi-agent-task", params={"q": "拍照手机 预算5000"})
+
+    response = client.get("/analytics/summary")
+
+    assert response.status_code == 200
+    summary = response.json()["summary"]
+    assert summary["total_requests"] == 2
+    assert summary["text_requests"] == 2
+    assert summary["image_requests"] == 0
+    assert summary["top_categories"]
+    assert summary["top_products"]
+
+
+def test_analytics_events_capture_image_request():
+    client.post(
+        "/multi-agent-task/image",
+        files={"file": ("not-an-image.txt", b"not an image", "text/plain")},
+    )
+
+    response = client.get("/analytics/events", params={"limit": 1})
+
+    assert response.status_code == 200
+    event = response.json()["events"][0]
+    assert event["image_search"] is True
+    assert event["result_count"] > 0
+    assert event["vector_backend"] is not None
+
+
 def test_products_endpoint_returns_catalog():
     response = client.get("/products")
 

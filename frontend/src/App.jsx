@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   createProduct,
   deleteProduct,
+  fetchAnalyticsSummary,
   fetchProducts,
   fetchImageResults,
   fetchMultiAgentResults,
@@ -114,6 +115,7 @@ export default function App() {
   const [file, setFile] = useState(null);
   const [userId, setUserId] = useState("");
   const [results, setResults] = useState([]);
+  const [analyticsSummary, setAnalyticsSummary] = useState(null);
   const [vectorStatus, setVectorStatus] = useState(null);
   const [vectorActionLoading, setVectorActionLoading] = useState(false);
   const [products, setProducts] = useState([]);
@@ -127,11 +129,13 @@ export default function App() {
 
     async function loadAdminData() {
       try {
-        const [vectorData, productData] = await Promise.all([
+        const [analyticsData, vectorData, productData] = await Promise.all([
+          fetchAnalyticsSummary(),
           fetchVectorIndexStatus(),
           fetchProducts(),
         ]);
         if (!cancelled) {
+          setAnalyticsSummary(analyticsData.summary);
           setVectorStatus(vectorData.status);
           setProducts(productData.products);
         }
@@ -151,6 +155,7 @@ export default function App() {
     if (!query) return;
     try {
       const data = await fetchMultiAgentResults(query, userId);
+      const analyticsData = await fetchAnalyticsSummary();
       // 去重商品，避免重复 id
       const uniqueResults = [];
       const seen = new Set();
@@ -161,6 +166,7 @@ export default function App() {
         }
       });
       setResults(uniqueResults);
+      setAnalyticsSummary(analyticsData.summary);
     } catch (err) {
       console.error(err);
     }
@@ -171,6 +177,7 @@ export default function App() {
     if (!file) return;
     try {
       const data = await fetchImageResults(file, userId);
+      const analyticsData = await fetchAnalyticsSummary();
       const uniqueResults = [];
       const seen = new Set();
       data.results.forEach((p) => {
@@ -180,6 +187,7 @@ export default function App() {
         }
       });
       setResults(uniqueResults);
+      setAnalyticsSummary(analyticsData.summary);
     } catch (err) {
       console.error(err);
     }
@@ -213,12 +221,14 @@ export default function App() {
   };
 
   const refreshProducts = async () => {
-    const [productData, vectorData] = await Promise.all([
+    const [productData, vectorData, analyticsData] = await Promise.all([
       fetchProducts(),
       fetchVectorIndexStatus(),
+      fetchAnalyticsSummary(),
     ]);
     setProducts(productData.products);
     setVectorStatus(vectorData.status);
+    setAnalyticsSummary(analyticsData.summary);
   };
 
   const handleDeleteProduct = async (productId) => {
@@ -290,6 +300,29 @@ export default function App() {
   return (
     <div className="p-4 max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">AI Shopping Assistant</h1>
+
+      {analyticsSummary && (
+        <div className="mb-4 rounded border bg-blue-50 p-3 text-sm">
+          <div className="font-semibold mb-1">推荐统计概览</div>
+          <div>请求数: {analyticsSummary.total_requests}</div>
+          <div>文本请求: {analyticsSummary.text_requests}</div>
+          <div>图片请求: {analyticsSummary.image_requests}</div>
+          <div>平均返回商品数: {analyticsSummary.average_result_count}</div>
+          <div>最近一次请求: {analyticsSummary.last_event_at || "暂无"}</div>
+          <div className="mt-2">
+            热门查询:{" "}
+            {analyticsSummary.top_queries.length > 0
+              ? analyticsSummary.top_queries.map((item) => `${item.name}(${item.count})`).join(" / ")
+              : "暂无"}
+          </div>
+          <div>
+            热门类目:{" "}
+            {analyticsSummary.top_categories.length > 0
+              ? analyticsSummary.top_categories.map((item) => `${item.name}(${item.count})`).join(" / ")
+              : "暂无"}
+          </div>
+        </div>
+      )}
 
       {vectorStatus && (
         <div className="mb-4 rounded border bg-gray-50 p-3 text-sm">

@@ -13,6 +13,7 @@ if str(BACKEND_DIR) not in sys.path:
 @pytest.fixture(autouse=True)
 def isolate_repo_data():
     from app import routes
+    from app.services.analytics_service import get_analytics_events_path
     from app.services.product_service import (
         get_product_index_path,
         get_products_path,
@@ -30,6 +31,7 @@ def isolate_repo_data():
         get_user_profiles_path(),
         get_product_index_path(),
         get_product_index_metadata_path(),
+        get_analytics_events_path(),
     ]
     snapshots = {}
     for path in tracked_paths:

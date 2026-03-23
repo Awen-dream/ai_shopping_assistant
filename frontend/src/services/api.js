@@ -40,6 +40,11 @@ export async function fetchVectorIndexStatus() {
   return parseJsonResponse(response);
 }
 
+export async function fetchAnalyticsSummary() {
+  const response = await fetch(`${API_BASE_URL}/analytics/summary`);
+  return parseJsonResponse(response);
+}
+
 export async function rebuildVectorIndex(persist = true) {
   const response = await fetch(
     `${API_BASE_URL}/vector-index/rebuild?persist=${persist ? "true" : "false"}`,

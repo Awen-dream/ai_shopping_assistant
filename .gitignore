@@ -7,3 +7,4 @@ frontend/node_modules/
 frontend/dist/
 data/product_index.faiss
 data/product_index.meta.json
+data/recommendation_events.jsonl

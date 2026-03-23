@@ -8,6 +8,12 @@ from fastapi import APIRouter, File, Form, Query, UploadFile
 from pydantic import BaseModel
 
 from .multi_agent_coordinator import MultiAgentCoordinator
+from .services.analytics_service import (
+    build_recommendation_event,
+    get_analytics_summary,
+    list_recommendation_events,
+    log_recommendation_event,
+)
 from .services.product_service import create_product, delete_product, list_products, upsert_product
 from .services.user_profile_service import get_user_profile, upsert_user_profile
 from .services.vector_store_service import rebuild_vector_store, sync_vector_store_after_product_change
@@ -53,6 +59,15 @@ class ProductPayload(BaseModel):
 @router.get("/multi-agent-task")
 def query_products(q: str = Query(..., min_length=1), user_id: str | None = Query(default=None)):
     results = get_coordinator().handle_query(query=q, user_id=user_id)
+    log_recommendation_event(
+        build_recommendation_event(
+            results,
+            query=q,
+            user_id=user_id,
+            image_search=False,
+            vector_status=get_coordinator().get_vector_status(),
+        )
+    )
     return {"results": results}
 
 
@@ -67,6 +82,15 @@ def query_by_image(file: UploadFile = File(...), user_id: str | None = Form(defa
             temp_path = temp_file.name
 
         results = get_coordinator().handle_query(image_path=temp_path, user_id=user_id)
+        log_recommendation_event(
+            build_recommendation_event(
+                results,
+                query="",
+                user_id=user_id,
+                image_search=True,
+                vector_status=get_coordinator().get_vector_status(),
+            )
+        )
         return {"results": results}
     finally:
         if temp_path and os.path.exists(temp_path):
@@ -127,3 +151,13 @@ def rebuild_vector_index(persist: bool = Query(default=True)):
     get_coordinator.cache_clear()
     refreshed_status = get_coordinator().get_vector_status()
     return {"status": status, "active_status": refreshed_status}
+
+
+@router.get("/analytics/summary")
+def read_analytics_summary():
+    return {"summary": get_analytics_summary()}
+
+
+@router.get("/analytics/events")
+def read_analytics_events(limit: int = Query(default=10, ge=1, le=100)):
+    return {"events": list_recommendation_events(limit=limit)}
