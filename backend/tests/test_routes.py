@@ -209,6 +209,42 @@ def test_feedback_endpoint_rejects_unknown_event_type():
     assert response.status_code == 400
 
 
+def test_analytics_dashboard_aggregates_query_and_product_performance():
+    client.get("/multi-agent-task", params={"q": "通勤降噪耳机"})
+    client.post(
+        "/analytics/feedback",
+        json={
+            "event_type": "click",
+            "product_id": 9,
+            "product_name": "Sony WH-1000XM5",
+            "query": "通勤降噪耳机",
+        },
+    )
+    client.post(
+        "/analytics/feedback",
+        json={
+            "event_type": "purchase",
+            "product_id": 9,
+            "product_name": "Sony WH-1000XM5",
+            "query": "通勤降噪耳机",
+        },
+    )
+
+    response = client.get("/analytics/dashboard", params={"limit": 5})
+
+    assert response.status_code == 200
+    dashboard = response.json()["dashboard"]
+    assert dashboard["funnel"]["requests"] == 1
+    assert dashboard["funnel"]["clicks"] == 1
+    assert dashboard["funnel"]["purchases"] == 1
+    assert dashboard["query_performance"][0]["query"] == "通勤降噪耳机"
+    assert dashboard["query_performance"][0]["purchase_count"] == 1
+    assert dashboard["product_performance"][0]["product_name"] == "Sony WH-1000XM5"
+    assert dashboard["product_performance"][0]["click_count"] == 1
+    assert dashboard["recent_feedback"]
+    assert dashboard["recent_searches"]
+
+
 def test_products_endpoint_returns_catalog():
     response = client.get("/products")
 

@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from .multi_agent_coordinator import MultiAgentCoordinator
 from .services.analytics_service import (
     build_feedback_event,
+    get_analytics_dashboard,
     build_recommendation_event,
     get_analytics_summary,
     list_feedback_events,
@@ -167,6 +168,11 @@ def rebuild_vector_index(persist: bool = Query(default=True)):
 @router.get("/analytics/summary")
 def read_analytics_summary():
     return {"summary": get_analytics_summary()}
+
+
+@router.get("/analytics/dashboard")
+def read_analytics_dashboard(limit: int = Query(default=5, ge=1, le=20)):
+    return {"dashboard": get_analytics_dashboard(limit=limit)}
 
 
 @router.get("/analytics/events")

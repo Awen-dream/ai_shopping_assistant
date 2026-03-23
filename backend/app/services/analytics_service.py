@@ -129,6 +129,90 @@ def _top_counter_items(counter: Counter, limit: int = 5) -> list[dict]:
     return [{"name": name, "count": count} for name, count in counter.most_common(limit)]
 
 
+def _build_query_performance(events: list[dict], feedback_events: list[dict], limit: int = 5) -> list[dict]:
+    performance = {}
+    for event in events:
+        query = event.get("query")
+        if not query:
+            continue
+        record = performance.setdefault(
+            query,
+            {"query": query, "request_count": 0, "click_count": 0, "favorite_count": 0, "purchase_count": 0},
+        )
+        record["request_count"] += 1
+
+    for feedback_event in feedback_events:
+        query = feedback_event.get("query")
+        if not query or query not in performance:
+            continue
+        event_type = feedback_event.get("event_type")
+        if event_type == "click":
+            performance[query]["click_count"] += 1
+        elif event_type == "favorite":
+            performance[query]["favorite_count"] += 1
+        elif event_type == "purchase":
+            performance[query]["purchase_count"] += 1
+
+    items = []
+    for query, record in performance.items():
+        request_count = max(record["request_count"], 1)
+        record["click_rate"] = round(record["click_count"] / request_count, 2)
+        record["purchase_rate"] = round(record["purchase_count"] / request_count, 2)
+        items.append(record)
+
+    return sorted(items, key=lambda item: (item["request_count"], item["click_count"], item["purchase_count"]), reverse=True)[:limit]
+
+
+def _build_product_performance(events: list[dict], feedback_events: list[dict], limit: int = 5) -> list[dict]:
+    performance = {}
+    for event in events:
+        product_name = event.get("top_product_name")
+        if not product_name:
+            continue
+        record = performance.setdefault(
+            product_name,
+            {
+                "product_name": product_name,
+                "recommend_count": 0,
+                "click_count": 0,
+                "favorite_count": 0,
+                "purchase_count": 0,
+            },
+        )
+        record["recommend_count"] += 1
+
+    for feedback_event in feedback_events:
+        product_name = feedback_event.get("product_name")
+        if not product_name:
+            continue
+        record = performance.setdefault(
+            product_name,
+            {
+                "product_name": product_name,
+                "recommend_count": 0,
+                "click_count": 0,
+                "favorite_count": 0,
+                "purchase_count": 0,
+            },
+        )
+        event_type = feedback_event.get("event_type")
+        if event_type == "click":
+            record["click_count"] += 1
+        elif event_type == "favorite":
+            record["favorite_count"] += 1
+        elif event_type == "purchase":
+            record["purchase_count"] += 1
+
+    items = []
+    for product_name, record in performance.items():
+        recommend_count = max(record["recommend_count"], 1)
+        record["click_rate"] = round(record["click_count"] / recommend_count, 2)
+        record["purchase_rate"] = round(record["purchase_count"] / recommend_count, 2)
+        items.append(record)
+
+    return sorted(items, key=lambda item: (item["recommend_count"], item["click_count"], item["purchase_count"]), reverse=True)[:limit]
+
+
 def get_analytics_summary() -> dict:
     events = list_recommendation_events(limit=0)
     feedback_events = list_feedback_events(limit=0)
@@ -187,4 +271,24 @@ def get_analytics_summary() -> dict:
         "top_stores": _top_counter_items(store_counter),
         "top_feedback_products": _top_counter_items(feedback_product_counter),
         "last_event_at": max(last_candidates) if last_candidates else None,
+    }
+
+
+def get_analytics_dashboard(limit: int = 5) -> dict:
+    events = list_recommendation_events(limit=0)
+    feedback_events = list_feedback_events(limit=0)
+    summary = get_analytics_summary()
+
+    return {
+        "summary": summary,
+        "funnel": {
+            "requests": summary["total_requests"],
+            "clicks": summary["feedback_counts"]["click"],
+            "favorites": summary["feedback_counts"]["favorite"],
+            "purchases": summary["feedback_counts"]["purchase"],
+        },
+        "query_performance": _build_query_performance(events, feedback_events, limit=limit),
+        "product_performance": _build_product_performance(events, feedback_events, limit=limit),
+        "recent_searches": list_recommendation_events(limit=limit),
+        "recent_feedback": list_feedback_events(limit=limit),
     }
