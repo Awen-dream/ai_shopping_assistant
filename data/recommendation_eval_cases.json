@@ -1,0 +1,41 @@
+[
+  {
+    "case_id": "commute_noise_canceling_headphones",
+    "query": "通勤降噪耳机",
+    "expected_top_product": "Sony WH-1000XM5",
+    "expected_category": "耳机",
+    "expected_brand": "Sony"
+  },
+  {
+    "case_id": "camera_phone_budget_5000",
+    "query": "拍照手机 预算5000",
+    "expected_top_product": "Xiaomi 14",
+    "expected_category": "手机",
+    "max_price": 5000
+  },
+  {
+    "case_id": "apple_lightweight_laptop",
+    "query": "Apple 轻薄笔记本 预算12000",
+    "expected_top_product": "MacBook Air M3",
+    "expected_category": "笔记本",
+    "expected_brand": "Apple",
+    "max_price": 12000
+  },
+  {
+    "case_id": "student_profile_laptop",
+    "query": "轻薄本",
+    "user_id": "demo_student",
+    "expected_top_product": "Lenovo Xiaoxin Pro 14",
+    "expected_category": "笔记本",
+    "expected_brand": "Lenovo",
+    "max_price": 6000
+  },
+  {
+    "case_id": "student_budget_light_laptop",
+    "query": "学生 预算6000 轻薄本",
+    "expected_top_product": "Lenovo Xiaoxin Pro 14",
+    "expected_category": "笔记本",
+    "expected_brand": "Lenovo",
+    "max_price": 6000
+  }
+]
