@@ -138,6 +138,46 @@ function formatRatio(value) {
   return `${(value * 100).toFixed(0)}%`;
 }
 
+function getEvaluationIssues(item) {
+  const issues = [];
+
+  if (!item.top1_hit) {
+    issues.push("Top1 未命中");
+  }
+  if (!item.category_hit) {
+    issues.push("类目未命中");
+  }
+  if (item.brand_hit === false) {
+    issues.push("品牌未命中");
+  }
+  if (item.budget_hit === false) {
+    issues.push("预算未命中");
+  }
+
+  return issues;
+}
+
+function summarizeEvaluationIssues(items) {
+  const counts = new Map();
+
+  items.forEach((item) => {
+    if (item.passed) {
+      return;
+    }
+
+    const issues = getEvaluationIssues(item);
+    const normalizedIssues = issues.length ? issues : ["需要进一步排查"];
+    normalizedIssues.forEach((issue) => {
+      counts.set(issue, (counts.get(issue) || 0) + 1);
+    });
+  });
+
+  return [...counts.entries()]
+    .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0], "zh-CN"))
+    .slice(0, 3)
+    .map(([label, count]) => ({ label, count }));
+}
+
 function StatCard({ label, value, hint, tone = "workspace" }) {
   return (
     <div className={`stat-card stat-card--${tone}`}>
@@ -331,6 +371,7 @@ export default function App() {
   const [results, setResults] = useState([]);
   const [analyticsDashboard, setAnalyticsDashboard] = useState(null);
   const [analyticsEvaluation, setAnalyticsEvaluation] = useState(null);
+  const [evaluationFilter, setEvaluationFilter] = useState("all");
   const [vectorStatus, setVectorStatus] = useState(null);
   const [vectorActionLoading, setVectorActionLoading] = useState(false);
   const [products, setProducts] = useState([]);
@@ -342,6 +383,66 @@ export default function App() {
   const isWorkspaceView = activeView === "workspace";
 
   const analyticsSummary = analyticsDashboard?.summary;
+  const evaluationCases = analyticsEvaluation?.cases || [];
+
+  const filteredEvaluationCases = evaluationCases.filter((item) => {
+    if (evaluationFilter === "all") {
+      return true;
+    }
+    if (evaluationFilter === "failed") {
+      return !item.passed;
+    }
+    if (evaluationFilter === "profile") {
+      return Boolean(item.user_id);
+    }
+    if (evaluationFilter === "budget") {
+      return item.max_price != null;
+    }
+    return item.expected_category === evaluationFilter;
+  });
+
+  const sortedEvaluationCases = [...filteredEvaluationCases].sort((left, right) => {
+    if (left.passed !== right.passed) {
+      return left.passed ? 1 : -1;
+    }
+    return left.query.localeCompare(right.query, "zh-CN");
+  });
+  const topEvaluationIssues = summarizeEvaluationIssues(filteredEvaluationCases);
+
+  const filteredEvaluationSummary = (() => {
+    if (!filteredEvaluationCases.length) {
+      return {
+        totalCases: 0,
+        passedCases: 0,
+        passRate: 0,
+        top1HitRate: 0,
+        categoryHitRate: 0,
+        brandHitRate: 0,
+        budgetHitRate: 0,
+        failedCases: 0,
+      };
+    }
+
+    const passedCases = filteredEvaluationCases.filter((item) => item.passed).length;
+    const top1Hits = filteredEvaluationCases.filter((item) => item.top1_hit).length;
+    const categoryHits = filteredEvaluationCases.filter((item) => item.category_hit).length;
+    const brandCases = filteredEvaluationCases.filter((item) => item.brand_hit != null);
+    const budgetCases = filteredEvaluationCases.filter((item) => item.budget_hit != null);
+    return {
+      totalCases: filteredEvaluationCases.length,
+      passedCases,
+      passRate: passedCases / filteredEvaluationCases.length,
+      top1HitRate: top1Hits / filteredEvaluationCases.length,
+      categoryHitRate: categoryHits / filteredEvaluationCases.length,
+      brandHitRate: brandCases.length
+        ? brandCases.filter((item) => item.brand_hit).length / brandCases.length
+        : 0,
+      budgetHitRate: budgetCases.length
+        ? budgetCases.filter((item) => item.budget_hit).length / budgetCases.length
+        : 0,
+      failedCases: filteredEvaluationCases.length - passedCases,
+    };
+  })();
 
   const refreshAnalyticsInsights = async () => {
     const [analyticsData, evaluationData] = await Promise.all([
@@ -871,79 +972,146 @@ export default function App() {
                     <div className="stats-grid stats-grid--dashboard">
                       <StatCard
                         label="样本总数"
-                        value={analyticsEvaluation.summary?.total_cases ?? 0}
-                        hint="当前固定评估 case 数"
+                        value={filteredEvaluationSummary.totalCases}
+                        hint="当前筛选下的评估 case 数"
                         tone="admin"
                       />
                       <StatCard
                         label="通过率"
-                        value={formatRatio(analyticsEvaluation.summary?.pass_rate)}
-                        hint={`通过 ${analyticsEvaluation.summary?.passed_cases ?? 0} 条`}
+                        value={formatRatio(filteredEvaluationSummary.passRate)}
+                        hint={`通过 ${filteredEvaluationSummary.passedCases} 条 · 待优化 ${filteredEvaluationSummary.failedCases} 条`}
                         tone="admin"
                       />
                       <StatCard
                         label="Top1 命中"
-                        value={formatRatio(analyticsEvaluation.summary?.top1_hit_rate)}
-                        hint={`类目命中 ${formatRatio(analyticsEvaluation.summary?.category_hit_rate)}`}
+                        value={formatRatio(filteredEvaluationSummary.top1HitRate)}
+                        hint={`类目命中 ${formatRatio(filteredEvaluationSummary.categoryHitRate)}`}
                         tone="admin"
                       />
                       <StatCard
                         label="预算命中"
-                        value={formatRatio(analyticsEvaluation.summary?.budget_hit_rate)}
-                        hint={`品牌命中 ${formatRatio(analyticsEvaluation.summary?.brand_hit_rate)}`}
+                        value={formatRatio(filteredEvaluationSummary.budgetHitRate)}
+                        hint={`品牌命中 ${formatRatio(filteredEvaluationSummary.brandHitRate)}`}
                         tone="admin"
                       />
                     </div>
 
+                    <div className="eval-toolbar">
+                      <div className="eval-toolbar__meta">
+                        <div className="eval-toolbar__label">按维度查看</div>
+                        <div className="eval-toolbar__hint">失败样本会自动排在前面，方便集中定位问题。</div>
+                      </div>
+                      <SegmentedTabs
+                        options={[
+                          { label: "全部", value: "all" },
+                          { label: "待优化", value: "failed" },
+                          { label: "耳机", value: "耳机" },
+                          { label: "手机", value: "手机" },
+                          { label: "笔记本", value: "笔记本" },
+                          { label: "用户画像", value: "profile" },
+                          { label: "预算约束", value: "budget" },
+                        ]}
+                        value={evaluationFilter}
+                        onChange={setEvaluationFilter}
+                      />
+                    </div>
+
+                    <div className="eval-summary-row">
+                      <span className="chip chip--neutral">当前筛选 {filteredEvaluationSummary.totalCases} 条</span>
+                      <span className="chip chip--amber">待优化 {filteredEvaluationSummary.failedCases} 条</span>
+                      <span className="chip chip--emerald">通过 {filteredEvaluationSummary.passedCases} 条</span>
+                    </div>
+
+                    {topEvaluationIssues.length ? (
+                      <div className="eval-insight-banner">
+                        <div className="eval-insight-banner__label">问题热点</div>
+                        <div className="eval-insight-banner__content">
+                          {topEvaluationIssues.map((issue) => (
+                            <span key={issue.label} className="eval-insight-badge">
+                              {issue.label} · {issue.count} 条
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+
                     <div className="eval-case-grid">
-                      {analyticsEvaluation.cases?.map((item) => (
-                        <div key={item.case_id} className="eval-case">
-                          <div className="eval-case__header">
-                            <div>
-                              <div className="eval-case__title">{item.query}</div>
-                              <div className="eval-case__meta">
-                                期望 Top1: {item.expected_top_product || "未定义"}
+                      {sortedEvaluationCases.map((item) => {
+                        const issues = getEvaluationIssues(item);
+                        return (
+                          <div
+                            key={item.case_id}
+                            className={`eval-case${item.passed ? "" : " eval-case--attention"}`}
+                          >
+                            <div className="eval-case__header">
+                              <div>
+                                <div className="eval-case__title">{item.query}</div>
+                                <div className="eval-case__meta">
+                                  期望 Top1: {item.expected_top_product || "未定义"}
+                                </div>
+                              </div>
+                              <span
+                                className={`status-pill ${
+                                  item.passed ? "status-pill--success" : "status-pill--warning"
+                                }`}
+                              >
+                                {item.passed ? "通过" : "待优化"}
+                              </span>
+                            </div>
+
+                            <div className="eval-case__body">
+                              <div>实际 Top1: {item.actual_top_product || "无结果"}</div>
+                              <div>类目: {item.actual_category || "-"}</div>
+                              <div>品牌: {item.actual_brand || "-"}</div>
+                              <div>
+                                价格: {typeof item.actual_price === "number" ? formatMoney(item.actual_price) : "-"}
                               </div>
                             </div>
-                            <span
-                              className={`status-pill ${
-                                item.passed ? "status-pill--success" : "status-pill--warning"
-                              }`}
-                            >
-                              {item.passed ? "通过" : "待优化"}
-                            </span>
-                          </div>
 
-                          <div className="eval-case__body">
-                            <div>实际 Top1: {item.actual_top_product || "无结果"}</div>
-                            <div>类目: {item.actual_category || "-"}</div>
-                            <div>品牌: {item.actual_brand || "-"}</div>
-                            <div>
-                              价格: {typeof item.actual_price === "number" ? formatMoney(item.actual_price) : "-"}
+                            {!item.passed ? (
+                              <div className="eval-case__diagnosis">
+                                <div className="eval-case__diagnosis-title">待优化原因</div>
+                                <div className="eval-case__diagnosis-list">
+                                  {issues.length ? (
+                                    issues.map((issue) => (
+                                      <span key={`${item.case_id}-${issue}`} className="eval-issue-badge">
+                                        {issue}
+                                      </span>
+                                    ))
+                                  ) : (
+                                    <span className="eval-issue-badge">需要进一步排查</span>
+                                  )}
+                                </div>
+                              </div>
+                            ) : null}
+
+                            <div className="chip-row chip-row--admin">
+                              <span className={`chip ${item.top1_hit ? "chip--emerald" : "chip--neutral"}`}>
+                                Top1 {item.top1_hit ? "命中" : "未命中"}
+                              </span>
+                              <span className={`chip ${item.category_hit ? "chip--sky" : "chip--neutral"}`}>
+                                类目 {item.category_hit ? "命中" : "未命中"}
+                              </span>
+                              {item.user_id ? <span className="chip chip--sky">画像样本</span> : null}
+                              {item.brand_hit != null ? (
+                                <span className={`chip ${item.brand_hit ? "chip--emerald" : "chip--neutral"}`}>
+                                  品牌 {item.brand_hit ? "命中" : "未命中"}
+                                </span>
+                              ) : null}
+                              {item.budget_hit != null ? (
+                                <span className={`chip ${item.budget_hit ? "chip--amber" : "chip--neutral"}`}>
+                                  预算 {item.budget_hit ? "命中" : "未命中"}
+                                </span>
+                              ) : null}
                             </div>
                           </div>
-
-                          <div className="chip-row chip-row--admin">
-                            <span className={`chip ${item.top1_hit ? "chip--emerald" : "chip--neutral"}`}>
-                              Top1 {item.top1_hit ? "命中" : "未命中"}
-                            </span>
-                            <span className={`chip ${item.category_hit ? "chip--sky" : "chip--neutral"}`}>
-                              类目 {item.category_hit ? "命中" : "未命中"}
-                            </span>
-                            {item.brand_hit != null ? (
-                              <span className={`chip ${item.brand_hit ? "chip--emerald" : "chip--neutral"}`}>
-                                品牌 {item.brand_hit ? "命中" : "未命中"}
-                              </span>
-                            ) : null}
-                            {item.budget_hit != null ? (
-                              <span className={`chip ${item.budget_hit ? "chip--amber" : "chip--neutral"}`}>
-                                预算 {item.budget_hit ? "命中" : "未命中"}
-                              </span>
-                            ) : null}
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
+
+                    {filteredEvaluationCases.length === 0 ? (
+                      <div className="empty-state empty-state--compact">当前筛选下暂无评估样本。</div>
+                    ) : null}
                   </SectionCard>
                 ) : null}
 

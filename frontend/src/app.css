@@ -1210,6 +1210,80 @@ button {
   color: #6c88a5;
 }
 
+.empty-state--compact {
+  margin-top: 1rem;
+  padding: 1.2rem 1rem;
+  border-radius: 22px;
+}
+
+.eval-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.9rem;
+  margin-top: 1.2rem;
+}
+
+.eval-toolbar__meta {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.eval-toolbar__label {
+  color: #6283a6;
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.eval-toolbar__hint {
+  color: #7b98b4;
+  font-size: 0.9rem;
+}
+
+.eval-summary-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1rem;
+}
+
+.eval-insight-banner {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 1rem;
+  border: 1px solid rgba(144, 196, 236, 0.26);
+  border-radius: 22px;
+  padding: 0.95rem 1rem;
+  background: linear-gradient(180deg, rgba(241, 248, 255, 0.98), rgba(231, 242, 251, 0.94));
+}
+
+.eval-insight-banner__label {
+  color: #4775a0;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.eval-insight-banner__content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.eval-insight-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.48rem 0.8rem;
+  background: rgba(222, 241, 255, 0.98);
+  color: #145f94;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
 .eval-case-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1224,6 +1298,13 @@ button {
   background:
     linear-gradient(180deg, rgba(240, 247, 252, 0.96), rgba(222, 236, 246, 0.92));
   box-shadow: 0 20px 42px -34px rgba(69, 138, 204, 0.18);
+}
+
+.eval-case--attention {
+  border-color: rgba(255, 191, 102, 0.34);
+  background:
+    linear-gradient(180deg, rgba(255, 250, 242, 0.98), rgba(242, 238, 225, 0.96));
+  box-shadow: 0 24px 52px -36px rgba(217, 130, 15, 0.22);
 }
 
 .eval-case__header {
@@ -1251,6 +1332,40 @@ button {
   margin-top: 0.9rem;
   color: #45627f;
   font-size: 0.94rem;
+}
+
+.eval-case__diagnosis {
+  margin-top: 0.95rem;
+  border: 1px solid rgba(255, 201, 124, 0.38);
+  border-radius: 18px;
+  padding: 0.85rem 0.9rem;
+  background: rgba(255, 247, 229, 0.9);
+}
+
+.eval-case__diagnosis-title {
+  color: #a25a02;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.eval-case__diagnosis-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 0.65rem;
+}
+
+.eval-issue-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.42rem 0.72rem;
+  background: rgba(255, 236, 196, 0.96);
+  color: #a76009;
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
 .status-pill {
@@ -1400,7 +1515,8 @@ button {
 
   .feedback-row,
   .panel__actions,
-  .catalog-item__actions {
+  .catalog-item__actions,
+  .eval-toolbar {
     width: 100%;
   }
 
