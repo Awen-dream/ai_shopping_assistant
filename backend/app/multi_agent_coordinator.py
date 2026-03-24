@@ -1,19 +1,18 @@
-from .agents.inventory_agent import InventoryAgent
-from .agents.price_agent import PriceAgent
-from .agents.recommendation_agent import RecommendationAgent
-from .agents.search_agent import SearchAgent
-from .agents.intent_agent import IntentAgent
-from .agents.image_search_agent import ImageSearchAgent
-from .services.user_profile_service import get_user_profile, merge_profiles
+from .domains.inventory import apply_inventory_rules, create_inventory_agent
+from .domains.multimodal import create_image_search_agent, search_products_by_image
+from .domains.pricing import compare_prices, create_price_agent
+from .domains.profiles import get_user_profile, merge_profiles
+from .domains.query_understanding import create_intent_agent
+from .domains.recommendation import create_recommendation_agent, create_search_agent, search_market_offers
 
 class MultiAgentCoordinator:
     def __init__(self):
-        self.recommend_agent = RecommendationAgent()
-        self.search_agent = SearchAgent()
-        self.price_agent = PriceAgent()
-        self.inventory_agent = InventoryAgent()
-        self.intent_agent = IntentAgent()
-        self.image_agent = ImageSearchAgent(
+        self.recommend_agent = create_recommendation_agent()
+        self.search_agent = create_search_agent()
+        self.price_agent = create_price_agent()
+        self.inventory_agent = create_inventory_agent()
+        self.intent_agent = create_intent_agent()
+        self.image_agent = create_image_search_agent(
             self.recommend_agent.vector_retriever.index,
             self.recommend_agent.products
         )
@@ -24,24 +23,15 @@ class MultiAgentCoordinator:
         user_profile = merge_profiles(stored_profile, parsed_profile)
 
         if image_path:
-            # 图片搜索优先
-            recommended = self.image_agent.search_by_image(image_path)
+            recommended = search_products_by_image(self.image_agent, image_path)
             for product in recommended:
                 product.setdefault("reason", "Image-based fallback recommendation")
         else:
             recommended = self.recommend_agent.recommend(query, user_profile)
 
-        # 1️⃣ 推荐热门商品
-        #recommended = self.recommend_agent.recommend(query, user_profile)
-
-        # 2️⃣ 搜索匹配商品（多商家）
-        searched = self.search_agent.search(recommended, user_profile=user_profile)
-
-        # 3️⃣ 比价
-        priced = self.price_agent.compare(searched, user_profile=user_profile)
-
-        # 4️⃣ 检查库存
-        stocked = self.inventory_agent.filter_stock(priced, user_profile=user_profile)
+        searched = search_market_offers(recommended, user_profile=user_profile)
+        priced = compare_prices(searched, user_profile=user_profile)
+        stocked = apply_inventory_rules(priced, user_profile=user_profile)
 
         # 去重：按商品 id
         seen = set()

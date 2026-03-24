@@ -1,5 +1,9 @@
 # AI Shopping Assistant
 
+## 文档入口
+
+- 架构说明：`docs/ARCHITECTURE.md`
+
 ## 本地启动
 
 1. 初始化 FAISS 向量

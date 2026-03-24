@@ -557,6 +557,35 @@ export default function App() {
       ]
     : [];
 
+  const adminOverview = [
+    {
+      label: "当前模块",
+      value:
+        {
+          dashboard: "效果看板",
+          vector: "向量索引",
+          profiles: "用户画像",
+          products: "商品管理",
+        }[adminTab] || "运营工作台",
+      hint: "当前聚焦区域",
+    },
+    {
+      label: "索引状态",
+      value: vectorStatus?.ready ? "已就绪" : "待检查",
+      hint: vectorStatus?.backend || "等待初始化",
+    },
+    {
+      label: "商品目录",
+      value: `${products.length} 件`,
+      hint: "当前商品池规模",
+    },
+    {
+      label: "当前用户",
+      value: userId?.trim() || "未指定",
+      hint: "画像调试入口",
+    },
+  ];
+
   const heroContent = isWorkspaceView
     ? {
         eyebrow: "Search Atelier",
@@ -770,17 +799,31 @@ export default function App() {
             </div>
 
             <div className="admin-layout">
-            <SegmentedTabs
-              options={[
-                { label: "效果看板", value: "dashboard" },
-                { label: "向量索引", value: "vector" },
-                { label: "用户画像", value: "profiles" },
-                { label: "商品管理", value: "products" },
-              ]}
-              value={adminTab}
-              onChange={setAdminTab}
-              dark
-            />
+            <div className="admin-topbar">
+              <div className="admin-topbar__summary">
+                {adminOverview.map((item) => (
+                  <div key={item.label} className="admin-overview-card">
+                    <div className="admin-overview-card__label">{item.label}</div>
+                    <div className="admin-overview-card__value">{item.value}</div>
+                    <div className="admin-overview-card__hint">{item.hint}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="admin-topbar__tabs">
+                <SegmentedTabs
+                  options={[
+                    { label: "效果看板", value: "dashboard" },
+                    { label: "向量索引", value: "vector" },
+                    { label: "用户画像", value: "profiles" },
+                    { label: "商品管理", value: "products" },
+                  ]}
+                  value={adminTab}
+                  onChange={setAdminTab}
+                  dark
+                />
+              </div>
+            </div>
 
             {adminTab === "dashboard" && analyticsDashboard ? (
               <div className="admin-stack">
@@ -790,7 +833,7 @@ export default function App() {
                   tone="admin"
                   eyebrow="Performance Lens"
                 >
-                  <div className="stats-grid">
+                  <div className="stats-grid stats-grid--dashboard">
                     <StatCard label="请求" value={analyticsDashboard.funnel.requests} tone="admin" />
                     <StatCard label="点击" value={analyticsDashboard.funnel.clicks} tone="admin" />
                     <StatCard label="收藏" value={analyticsDashboard.funnel.favorites} tone="admin" />
@@ -891,7 +934,7 @@ export default function App() {
                   </>
                 }
               >
-                <div className="stats-grid">
+                <div className="stats-grid stats-grid--dashboard">
                   <StatCard label="后端" value={vectorStatus.backend} tone="admin" />
                   <StatCard label="状态" value={vectorStatus.ready ? "Ready" : "Not Ready"} tone="admin" />
                   <StatCard label="来源" value={vectorStatus.load_source} tone="admin" />

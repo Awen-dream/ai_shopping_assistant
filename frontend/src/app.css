@@ -390,6 +390,60 @@ button {
   margin-top: 1.75rem;
 }
 
+.admin-topbar {
+  position: relative;
+  display: grid;
+  gap: 1rem;
+  padding: 1.1rem;
+  border: 1px solid rgba(132, 187, 231, 0.24);
+  border-radius: 30px;
+  background:
+    radial-gradient(circle at top right, rgba(146, 213, 251, 0.18), transparent 24%),
+    linear-gradient(165deg, rgba(222, 236, 247, 0.92), rgba(206, 223, 237, 0.88));
+  box-shadow: 0 38px 90px -56px rgba(67, 122, 177, 0.3);
+}
+
+.admin-topbar__summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.admin-overview-card {
+  border: 1px solid rgba(124, 182, 225, 0.2);
+  border-radius: 24px;
+  padding: 1rem 1.05rem;
+  background:
+    linear-gradient(180deg, rgba(239, 247, 252, 0.96), rgba(223, 236, 245, 0.9));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+}
+
+.admin-overview-card__label {
+  color: #6283a6;
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.admin-overview-card__value {
+  margin-top: 0.65rem;
+  color: #173d60;
+  font-size: 1.28rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+.admin-overview-card__hint {
+  margin-top: 0.3rem;
+  color: #6e89a5;
+  font-size: 0.9rem;
+}
+
+.admin-topbar__tabs {
+  display: flex;
+  justify-content: flex-start;
+}
+
 .workspace-main,
 .workspace-side,
 .admin-layout,
@@ -434,6 +488,27 @@ button {
     radial-gradient(circle at top right, rgba(136, 206, 247, 0.18), transparent 24%),
     linear-gradient(165deg, rgba(234, 243, 250, 0.96), rgba(213, 228, 240, 0.92));
   box-shadow: 0 42px 108px -56px rgba(67, 122, 177, 0.28);
+}
+
+.admin-theme .segmented-tabs {
+  padding: 0.45rem;
+  border-color: rgba(130, 188, 230, 0.26);
+  background: rgba(238, 246, 251, 0.84);
+  box-shadow: 0 22px 48px -34px rgba(71, 125, 181, 0.18);
+}
+
+.admin-theme .segmented-tabs__item {
+  color: #6283a6;
+}
+
+.admin-theme .segmented-tabs__item:hover {
+  background: rgba(255, 255, 255, 0.42);
+}
+
+.admin-theme .segmented-tabs__item.is-active {
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.96), rgba(233, 244, 251, 0.98));
+  color: #173d60;
+  box-shadow: 0 12px 30px -22px rgba(72, 149, 225, 0.26);
 }
 
 .panel__header {
@@ -689,6 +764,10 @@ button {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.stats-grid--dashboard .stat-card {
+  min-height: 162px;
+}
+
 .admin-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -720,6 +799,22 @@ button {
     radial-gradient(circle at top right, rgba(149, 214, 249, 0.22), transparent 28%),
     linear-gradient(145deg, rgba(236, 245, 251, 0.96), rgba(215, 230, 242, 0.92));
   box-shadow: 0 34px 88px -52px rgba(68, 125, 183, 0.24);
+}
+
+.stats-grid--dashboard .stat-card--admin:nth-child(1) {
+  border-color: rgba(128, 196, 243, 0.24);
+}
+
+.stats-grid--dashboard .stat-card--admin:nth-child(2) {
+  border-color: rgba(120, 219, 198, 0.26);
+}
+
+.stats-grid--dashboard .stat-card--admin:nth-child(3) {
+  border-color: rgba(255, 197, 116, 0.24);
+}
+
+.stats-grid--dashboard .stat-card--admin:nth-child(4) {
+  border-color: rgba(235, 142, 180, 0.24);
 }
 
 .stat-card--admin::after {
@@ -1166,6 +1261,10 @@ button {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     align-items: start;
   }
+
+  .admin-topbar__summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 960px) {
@@ -1212,7 +1311,8 @@ button {
   .admin-grid,
   .results-grid,
   .workspace-side,
-  .side-stats {
+  .side-stats,
+  .admin-topbar__summary {
     grid-template-columns: 1fr;
   }
 

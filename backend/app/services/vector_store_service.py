@@ -4,6 +4,7 @@ from typing import List
 
 import numpy as np
 
+from app.domains.vector_index.model import build_product_text as domain_build_product_text
 from app.services.embedding_service import get_sentence_transformer
 from app.services.llm_client import (
     get_embedding_model,
@@ -25,16 +26,7 @@ _RUNTIME_VECTOR_STORE_OVERRIDE = None
 
 
 def build_product_text(product: dict) -> str:
-    fields = [
-        product.get("name", ""),
-        product.get("description", ""),
-        product.get("category", ""),
-        product.get("subcategory", ""),
-        product.get("brand", ""),
-        " ".join(product.get("tags", [])),
-        product.get("promotion_tag", ""),
-    ]
-    return " ".join(part for part in fields if part)
+    return domain_build_product_text(product)
 
 
 def get_product_index_metadata_path() -> Path:

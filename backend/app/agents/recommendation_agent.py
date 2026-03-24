@@ -2,10 +2,13 @@ import numpy as np
 import re
 from typing import List, Dict
 
-from app.agents.intent_agent import CATEGORY_KEYWORDS as INTENT_CATEGORY_KEYWORDS
-from app.agents.intent_agent import INTEREST_KEYWORDS, IntentAgent
-from app.services.product_service import list_products
-from app.services.vector_store_service import build_product_text, create_vector_store
+from app.domains.catalog import list_products
+from app.domains.query_understanding import (
+    CATEGORY_KEYWORDS as INTENT_CATEGORY_KEYWORDS,
+    INTEREST_KEYWORDS,
+    IntentAgent,
+)
+from app.domains.vector_index import build_product_text, create_vector_store
 
 # =========================
 # 本地规则类别映射
