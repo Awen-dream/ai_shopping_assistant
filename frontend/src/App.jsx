@@ -178,6 +178,90 @@ function summarizeEvaluationIssues(items) {
     .map(([label, count]) => ({ label, count }));
 }
 
+function summarizeCategoryIssues(items) {
+  const categoryMap = new Map();
+
+  items.forEach((item) => {
+    if (item.passed) {
+      return;
+    }
+
+    const category = item.expected_category || item.actual_category || "其他";
+    const issues = getEvaluationIssues(item);
+    const normalizedIssues = issues.length ? issues : ["需要进一步排查"];
+
+    if (!categoryMap.has(category)) {
+      categoryMap.set(category, new Map());
+    }
+
+    const issueMap = categoryMap.get(category);
+    normalizedIssues.forEach((issue) => {
+      issueMap.set(issue, (issueMap.get(issue) || 0) + 1);
+    });
+  });
+
+  return [...categoryMap.entries()]
+    .map(([category, issueMap]) => {
+      const [topIssue, count] = [...issueMap.entries()].sort(
+        (left, right) => right[1] - left[1] || left[0].localeCompare(right[0], "zh-CN")
+      )[0] || ["需要进一步排查", 0];
+
+      return { category, topIssue, count };
+    })
+    .sort((left, right) => right.count - left.count || left.category.localeCompare(right.category, "zh-CN"))
+    .slice(0, 3);
+}
+
+function summarizeCategoryProductSignals(items) {
+  const categoryMap = new Map();
+
+  items.forEach((item) => {
+    if (item.passed) {
+      return;
+    }
+
+    const category = item.expected_category || item.actual_category || "其他";
+    if (!categoryMap.has(category)) {
+      categoryMap.set(category, {
+        count: 0,
+        expectedProducts: new Map(),
+        expectedBrands: new Map(),
+        actualProducts: new Map(),
+        actualBrands: new Map(),
+      });
+    }
+
+    const bucket = categoryMap.get(category);
+    bucket.count += 1;
+
+    const expectedProduct = item.expected_top_product || "未定义目标商品";
+    const expectedBrand = item.expected_brand || "未定义目标品牌";
+    const actualProduct = item.actual_top_product || "无结果";
+    const actualBrand = item.actual_brand || "未知品牌";
+
+    bucket.expectedProducts.set(expectedProduct, (bucket.expectedProducts.get(expectedProduct) || 0) + 1);
+    bucket.expectedBrands.set(expectedBrand, (bucket.expectedBrands.get(expectedBrand) || 0) + 1);
+    bucket.actualProducts.set(actualProduct, (bucket.actualProducts.get(actualProduct) || 0) + 1);
+    bucket.actualBrands.set(actualBrand, (bucket.actualBrands.get(actualBrand) || 0) + 1);
+  });
+
+  const pickTop = (map, fallback) =>
+    [...map.entries()].sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0], "zh-CN"))[0]?.[0] ||
+    fallback;
+
+  return [...categoryMap.entries()]
+    .map(([category, bucket]) => ({
+      category,
+      count: bucket.count,
+      targetProduct: pickTop(bucket.expectedProducts, "未定义目标商品"),
+      targetBrand: pickTop(bucket.expectedBrands, "未定义目标品牌"),
+      actualProduct: pickTop(bucket.actualProducts, "无结果"),
+      actualBrand: pickTop(bucket.actualBrands, "未知品牌"),
+    }))
+    .sort((left, right) => right.count - left.count || left.category.localeCompare(right.category, "zh-CN"))
+    .slice(0, 3);
+}
+
 function StatCard({ label, value, hint, tone = "workspace" }) {
   return (
     <div className={`stat-card stat-card--${tone}`}>
@@ -408,6 +492,8 @@ export default function App() {
     return left.query.localeCompare(right.query, "zh-CN");
   });
   const topEvaluationIssues = summarizeEvaluationIssues(filteredEvaluationCases);
+  const categoryIssueInsights = summarizeCategoryIssues(filteredEvaluationCases);
+  const categoryProductSignals = summarizeCategoryProductSignals(filteredEvaluationCases);
 
   const filteredEvaluationSummary = (() => {
     if (!filteredEvaluationCases.length) {
@@ -1030,6 +1116,49 @@ export default function App() {
                             <span key={issue.label} className="eval-insight-badge">
                               {issue.label} · {issue.count} 条
                             </span>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {categoryIssueInsights.length ? (
+                      <div className="eval-category-banner">
+                        <div className="eval-category-banner__label">类目诊断</div>
+                        <div className="eval-category-banner__content">
+                          {categoryIssueInsights.map((item) => (
+                            <div key={item.category} className="eval-category-card">
+                              <div className="eval-category-card__title">{item.category}类</div>
+                              <div className="eval-category-card__issue">最常见: {item.topIssue}</div>
+                              <div className="eval-category-card__meta">涉及 {item.count} 条待优化样本</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {categoryProductSignals.length ? (
+                      <div className="eval-product-banner">
+                        <div className="eval-category-banner__label">问题商品与品牌线索</div>
+                        <div className="eval-product-banner__content">
+                          {categoryProductSignals.map((item) => (
+                            <div key={item.category} className="eval-product-card">
+                              <div className="eval-product-card__title">{item.category}类</div>
+                              <div className="eval-product-card__row">
+                                <span className="eval-product-card__tag">目标</span>
+                                <div>
+                                  <div className="eval-product-card__value">{item.targetProduct}</div>
+                                  <div className="eval-product-card__meta">{item.targetBrand}</div>
+                                </div>
+                              </div>
+                              <div className="eval-product-card__row">
+                                <span className="eval-product-card__tag eval-product-card__tag--actual">当前偏向</span>
+                                <div>
+                                  <div className="eval-product-card__value">{item.actualProduct}</div>
+                                  <div className="eval-product-card__meta">{item.actualBrand}</div>
+                                </div>
+                              </div>
+                              <div className="eval-product-card__foot">涉及 {item.count} 条待优化样本</div>
+                            </div>
                           ))}
                         </div>
                       </div>
