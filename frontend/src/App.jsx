@@ -3,6 +3,7 @@ import {
   createProduct,
   deleteProduct,
   fetchAnalyticsDashboard,
+  fetchAnalyticsEvaluation,
   fetchProducts,
   fetchImageResults,
   fetchMultiAgentResults,
@@ -128,6 +129,13 @@ function formatDateTime(value) {
     return "暂无";
   }
   return value.replace("T", " ").slice(0, 16);
+}
+
+function formatRatio(value) {
+  if (typeof value !== "number") {
+    return "-";
+  }
+  return `${(value * 100).toFixed(0)}%`;
 }
 
 function StatCard({ label, value, hint, tone = "workspace" }) {
@@ -322,6 +330,7 @@ export default function App() {
   const [userId, setUserId] = useState("");
   const [results, setResults] = useState([]);
   const [analyticsDashboard, setAnalyticsDashboard] = useState(null);
+  const [analyticsEvaluation, setAnalyticsEvaluation] = useState(null);
   const [vectorStatus, setVectorStatus] = useState(null);
   const [vectorActionLoading, setVectorActionLoading] = useState(false);
   const [products, setProducts] = useState([]);
@@ -334,10 +343,17 @@ export default function App() {
 
   const analyticsSummary = analyticsDashboard?.summary;
 
-  const refreshAnalyticsDashboard = async () => {
-    const analyticsData = await fetchAnalyticsDashboard();
+  const refreshAnalyticsInsights = async () => {
+    const [analyticsData, evaluationData] = await Promise.all([
+      fetchAnalyticsDashboard(),
+      fetchAnalyticsEvaluation(),
+    ]);
     setAnalyticsDashboard(analyticsData.dashboard);
-    return analyticsData.dashboard;
+    setAnalyticsEvaluation(evaluationData.evaluation);
+    return {
+      dashboard: analyticsData.dashboard,
+      evaluation: evaluationData.evaluation,
+    };
   };
 
   useEffect(() => {
@@ -345,13 +361,15 @@ export default function App() {
 
     async function loadAdminData() {
       try {
-        const [dashboard, vectorData, productData] = await Promise.all([
+        const [dashboard, evaluationData, vectorData, productData] = await Promise.all([
           fetchAnalyticsDashboard(),
+          fetchAnalyticsEvaluation(),
           fetchVectorIndexStatus(),
           fetchProducts(),
         ]);
         if (!cancelled) {
           setAnalyticsDashboard(dashboard.dashboard);
+          setAnalyticsEvaluation(evaluationData.evaluation);
           setVectorStatus(vectorData.status);
           setProducts(productData.products);
         }
@@ -379,7 +397,7 @@ export default function App() {
         }
       });
       setResults(uniqueResults);
-      await refreshAnalyticsDashboard();
+      await refreshAnalyticsInsights();
       setActiveView("workspace");
     } catch (err) {
       console.error(err);
@@ -399,7 +417,7 @@ export default function App() {
         }
       });
       setResults(uniqueResults);
-      await refreshAnalyticsDashboard();
+      await refreshAnalyticsInsights();
       setActiveView("workspace");
     } catch (err) {
       console.error(err);
@@ -442,7 +460,7 @@ export default function App() {
     ]);
     setProducts(productData.products);
     setVectorStatus(vectorData.status);
-    await refreshAnalyticsDashboard();
+    await refreshAnalyticsInsights();
   };
 
   const handleDeleteProduct = async (productId) => {
@@ -524,7 +542,7 @@ export default function App() {
         query,
         user_id: userId || undefined,
       });
-      await refreshAnalyticsDashboard();
+      await refreshAnalyticsInsights();
     } catch (err) {
       console.error(err);
     } finally {
@@ -582,7 +600,9 @@ export default function App() {
     {
       label: "当前用户",
       value: userId?.trim() || "未指定",
-      hint: "画像调试入口",
+      hint: analyticsEvaluation
+        ? `评估通过率 ${formatRatio(analyticsEvaluation.summary?.pass_rate)}`
+        : "画像调试入口",
     },
   ];
 
@@ -840,6 +860,92 @@ export default function App() {
                     <StatCard label="想下单" value={analyticsDashboard.funnel.purchases} tone="admin" />
                   </div>
                 </SectionCard>
+
+                {analyticsEvaluation ? (
+                  <SectionCard
+                    title="推荐评估样本"
+                    subtitle="固定样本集用于追踪推荐质量变化，帮助判断模型、规则和排序调整是否真的变好。"
+                    tone="admin"
+                    eyebrow="Evaluation Suite"
+                  >
+                    <div className="stats-grid stats-grid--dashboard">
+                      <StatCard
+                        label="样本总数"
+                        value={analyticsEvaluation.summary?.total_cases ?? 0}
+                        hint="当前固定评估 case 数"
+                        tone="admin"
+                      />
+                      <StatCard
+                        label="通过率"
+                        value={formatRatio(analyticsEvaluation.summary?.pass_rate)}
+                        hint={`通过 ${analyticsEvaluation.summary?.passed_cases ?? 0} 条`}
+                        tone="admin"
+                      />
+                      <StatCard
+                        label="Top1 命中"
+                        value={formatRatio(analyticsEvaluation.summary?.top1_hit_rate)}
+                        hint={`类目命中 ${formatRatio(analyticsEvaluation.summary?.category_hit_rate)}`}
+                        tone="admin"
+                      />
+                      <StatCard
+                        label="预算命中"
+                        value={formatRatio(analyticsEvaluation.summary?.budget_hit_rate)}
+                        hint={`品牌命中 ${formatRatio(analyticsEvaluation.summary?.brand_hit_rate)}`}
+                        tone="admin"
+                      />
+                    </div>
+
+                    <div className="eval-case-grid">
+                      {analyticsEvaluation.cases?.map((item) => (
+                        <div key={item.case_id} className="eval-case">
+                          <div className="eval-case__header">
+                            <div>
+                              <div className="eval-case__title">{item.query}</div>
+                              <div className="eval-case__meta">
+                                期望 Top1: {item.expected_top_product || "未定义"}
+                              </div>
+                            </div>
+                            <span
+                              className={`status-pill ${
+                                item.passed ? "status-pill--success" : "status-pill--warning"
+                              }`}
+                            >
+                              {item.passed ? "通过" : "待优化"}
+                            </span>
+                          </div>
+
+                          <div className="eval-case__body">
+                            <div>实际 Top1: {item.actual_top_product || "无结果"}</div>
+                            <div>类目: {item.actual_category || "-"}</div>
+                            <div>品牌: {item.actual_brand || "-"}</div>
+                            <div>
+                              价格: {typeof item.actual_price === "number" ? formatMoney(item.actual_price) : "-"}
+                            </div>
+                          </div>
+
+                          <div className="chip-row chip-row--admin">
+                            <span className={`chip ${item.top1_hit ? "chip--emerald" : "chip--neutral"}`}>
+                              Top1 {item.top1_hit ? "命中" : "未命中"}
+                            </span>
+                            <span className={`chip ${item.category_hit ? "chip--sky" : "chip--neutral"}`}>
+                              类目 {item.category_hit ? "命中" : "未命中"}
+                            </span>
+                            {item.brand_hit != null ? (
+                              <span className={`chip ${item.brand_hit ? "chip--emerald" : "chip--neutral"}`}>
+                                品牌 {item.brand_hit ? "命中" : "未命中"}
+                              </span>
+                            ) : null}
+                            {item.budget_hit != null ? (
+                              <span className={`chip ${item.budget_hit ? "chip--amber" : "chip--neutral"}`}>
+                                预算 {item.budget_hit ? "命中" : "未命中"}
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </SectionCard>
+                ) : null}
 
                 <div className="admin-grid">
                   <MiniList

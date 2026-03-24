@@ -50,6 +50,11 @@ export async function fetchAnalyticsDashboard(limit = 5) {
   return parseJsonResponse(response);
 }
 
+export async function fetchAnalyticsEvaluation() {
+  const response = await fetch(`${API_BASE_URL}/analytics/evaluation`);
+  return parseJsonResponse(response);
+}
+
 export async function sendFeedbackEvent(payload) {
   const response = await fetch(`${API_BASE_URL}/analytics/feedback`, {
     method: "POST",

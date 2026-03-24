@@ -9,3 +9,4 @@ data/product_index.faiss
 data/product_index.meta.json
 data/recommendation_events.jsonl
 data/recommendation_feedback.jsonl
+data/user_profiles.sqlite3

@@ -245,6 +245,18 @@ def test_analytics_dashboard_aggregates_query_and_product_performance():
     assert dashboard["recent_searches"]
 
 
+def test_analytics_evaluation_returns_summary_and_cases():
+    response = client.get("/analytics/evaluation")
+
+    assert response.status_code == 200
+    evaluation = response.json()["evaluation"]
+    assert evaluation["summary"]["total_cases"] >= 5
+    assert evaluation["summary"]["category_hit_rate"] >= 0.8
+    assert evaluation["summary"]["top1_hit_rate"] >= 0.8
+    assert evaluation["cases"]
+    assert any(case["case_id"] == "commute_noise_canceling_headphones" for case in evaluation["cases"])
+
+
 def test_products_endpoint_returns_catalog():
     response = client.get("/products")
 

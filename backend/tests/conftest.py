@@ -17,6 +17,8 @@ def isolate_repo_data():
     from app.services.product_service import (
         get_product_index_path,
         get_products_path,
+        get_recommendation_eval_cases_path,
+        get_user_profiles_db_path,
         get_user_profiles_path,
         refresh_products_cache,
     )
@@ -28,7 +30,9 @@ def isolate_repo_data():
 
     tracked_paths = [
         get_products_path(),
+        get_recommendation_eval_cases_path(),
         get_user_profiles_path(),
+        get_user_profiles_db_path(),
         get_product_index_path(),
         get_product_index_metadata_path(),
         get_analytics_events_path(),
