@@ -118,9 +118,13 @@ def test_user_profile_crud_roundtrip():
         "/user-profiles/test_stage2_user",
         json={
             "preferred_brand": ["Apple"],
+            "favorite_brands": ["Apple"],
             "budget_range": [1000, 9000],
             "interests": ["轻便"],
             "preferred_categories": ["手机", "耳机"],
+            "recent_categories": ["手机"],
+            "recent_clicked_product_ids": [1, 2],
+            "price_band_preference": "premium",
             "city": "Suzhou",
         },
     )
@@ -128,11 +132,13 @@ def test_user_profile_crud_roundtrip():
     assert save_response.status_code == 200
     saved_profile = save_response.json()["profile"]
     assert saved_profile["preferred_brand"] == ["Apple"]
+    assert saved_profile["recent_clicked_product_ids"] == [1, 2]
 
     read_response = client.get("/user-profiles/test_stage2_user")
     assert read_response.status_code == 200
     read_profile = read_response.json()["profile"]
     assert read_profile["city"] == "Suzhou"
+    assert read_profile["price_band_preference"] == "premium"
 
 
 def test_vector_index_status_endpoint_returns_status():

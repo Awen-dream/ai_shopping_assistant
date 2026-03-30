@@ -127,3 +127,47 @@ def test_student_budget_query_prefers_lenovo_laptop():
 
     assert result["name"] == "Lenovo Xiaoxin Pro 14"
     assert result["matched_features"]["budget_match"] is True
+
+
+def test_behavior_profile_signals_raise_matching_product_score():
+    agent = RecommendationAgent()
+    query_context = agent.query_context_builder.build(
+        "日常办公设备",
+        {
+            "budget_range": [0, 7000],
+            "favorite_brands": ["Lenovo"],
+            "recent_categories": ["笔记本"],
+            "recent_clicked_product_ids": [7],
+            "price_band_preference": "budget",
+        },
+    )
+
+    lenovo = next(product for product in agent.products if product["name"] == "Lenovo Xiaoxin Pro 14")
+    macbook = next(product for product in agent.products if product["name"] == "MacBook Air M3")
+
+    lenovo_score, lenovo_detail = agent.ranker.score(lenovo, query_context, 0.0, 0.0)
+    macbook_score, _ = agent.ranker.score(macbook, query_context, 0.0, 0.0)
+
+    assert lenovo_score > macbook_score
+    assert lenovo_detail["behavior_brand_match"] is True
+    assert lenovo_detail["behavior_category_match"] is True
+    assert lenovo_detail["recent_product_match"] is True
+    assert lenovo_detail["price_band_match"] is True
+
+
+def test_recommendation_reason_mentions_behavioral_profile_signals():
+    agent = RecommendationAgent()
+
+    result = agent.recommend(
+        "日常办公设备",
+        {
+            "budget_range": [0, 7000],
+            "favorite_brands": ["Lenovo"],
+            "recent_categories": ["笔记本"],
+            "recent_clicked_product_ids": [7],
+            "price_band_preference": "budget",
+        },
+    )[0]
+
+    assert result["name"] == "Lenovo Xiaoxin Pro 14"
+    assert "近期偏好的品牌" in result["reason"] or "近期关注的笔记本类目" in result["reason"]

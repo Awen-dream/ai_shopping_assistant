@@ -5,6 +5,10 @@
       "Apple",
       "Sony"
     ],
+    "favorite_brands": [
+      "Apple",
+      "Sony"
+    ],
     "budget_range": [
       1500,
       12000
@@ -18,13 +22,26 @@
       "笔记本",
       "耳机"
     ],
+    "recent_categories": [
+      "笔记本",
+      "耳机"
+    ],
+    "recent_clicked_product_ids": [
+      5,
+      9
+    ],
     "price_sensitivity": "medium",
+    "price_band_preference": "premium",
     "city": "Shanghai",
     "updated_at": "2026-03-21T10:00:00+08:00"
   },
   "demo_student": {
     "user_id": "demo_student",
     "preferred_brand": [
+      "Lenovo",
+      "Xiaomi"
+    ],
+    "favorite_brands": [
       "Lenovo",
       "Xiaomi"
     ],
@@ -41,7 +58,16 @@
       "手机",
       "笔记本"
     ],
+    "recent_categories": [
+      "笔记本",
+      "手机"
+    ],
+    "recent_clicked_product_ids": [
+      3,
+      7
+    ],
     "price_sensitivity": "high",
+    "price_band_preference": "budget",
     "city": "Hangzhou",
     "updated_at": "2026-03-21T10:00:00+08:00"
   }

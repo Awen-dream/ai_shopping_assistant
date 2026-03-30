@@ -33,11 +33,15 @@ const EMPTY_PRODUCT_FORM = {
 
 const EMPTY_PROFILE_FORM = {
   preferredBrand: "",
+  favoriteBrands: "",
   budgetMin: "",
   budgetMax: "",
   interests: "",
   preferredCategories: "",
+  recentCategories: "",
+  recentClickedProductIds: "",
   priceSensitivity: "medium",
+  priceBandPreference: "flexible",
   city: "",
 };
 
@@ -84,11 +88,15 @@ function mapProfileToForm(profile) {
 
   return {
     preferredBrand: (profile.preferred_brand || []).join(", "),
+    favoriteBrands: (profile.favorite_brands || []).join(", "),
     budgetMin: profile.budget_range?.[0] ?? "",
     budgetMax: profile.budget_range?.[1] ?? "",
     interests: (profile.interests || []).join(", "),
     preferredCategories: (profile.preferred_categories || []).join(", "),
+    recentCategories: (profile.recent_categories || []).join(", "),
+    recentClickedProductIds: (profile.recent_clicked_product_ids || []).join(", "),
     priceSensitivity: profile.price_sensitivity || "medium",
+    priceBandPreference: profile.price_band_preference || "flexible",
     city: profile.city || "",
   };
 }
@@ -96,6 +104,10 @@ function mapProfileToForm(profile) {
 function buildProfilePayload(form) {
   return {
     preferred_brand: form.preferredBrand
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean),
+    favorite_brands: form.favoriteBrands
       .split(",")
       .map((item) => item.trim())
       .filter(Boolean),
@@ -108,7 +120,16 @@ function buildProfilePayload(form) {
       .split(",")
       .map((item) => item.trim())
       .filter(Boolean),
+    recent_categories: form.recentCategories
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean),
+    recent_clicked_product_ids: form.recentClickedProductIds
+      .split(",")
+      .map((item) => Number(item.trim()))
+      .filter((item) => Number.isInteger(item) && item > 0),
     price_sensitivity: form.priceSensitivity,
+    price_band_preference: form.priceBandPreference,
     city: form.city.trim(),
   };
 }
@@ -1381,9 +1402,23 @@ export default function App() {
                   />
                   <input
                     type="text"
+                    value={profileForm.favoriteBrands}
+                    onChange={(e) => handleProfileFormChange("favoriteBrands", e.target.value)}
+                    placeholder="行为偏好品牌，逗号分隔"
+                    className="field"
+                  />
+                  <input
+                    type="text"
                     value={profileForm.preferredCategories}
                     onChange={(e) => handleProfileFormChange("preferredCategories", e.target.value)}
                     placeholder="偏好分类，逗号分隔"
+                    className="field"
+                  />
+                  <input
+                    type="text"
+                    value={profileForm.recentCategories}
+                    onChange={(e) => handleProfileFormChange("recentCategories", e.target.value)}
+                    placeholder="最近关注类目，逗号分隔"
                     className="field"
                   />
                   <input
@@ -1407,6 +1442,13 @@ export default function App() {
                     placeholder="兴趣点，逗号分隔"
                     className="field"
                   />
+                  <input
+                    type="text"
+                    value={profileForm.recentClickedProductIds}
+                    onChange={(e) => handleProfileFormChange("recentClickedProductIds", e.target.value)}
+                    placeholder="最近浏览商品 ID，逗号分隔"
+                    className="field"
+                  />
                   <select
                     value={profileForm.priceSensitivity}
                     onChange={(e) => handleProfileFormChange("priceSensitivity", e.target.value)}
@@ -1415,6 +1457,16 @@ export default function App() {
                     <option value="low">价格不敏感</option>
                     <option value="medium">价格中等敏感</option>
                     <option value="high">价格敏感</option>
+                  </select>
+                  <select
+                    value={profileForm.priceBandPreference}
+                    onChange={(e) => handleProfileFormChange("priceBandPreference", e.target.value)}
+                    className="field"
+                  >
+                    <option value="flexible">价格带不限</option>
+                    <option value="budget">偏好入门价位</option>
+                    <option value="mid">偏好主流价位</option>
+                    <option value="premium">偏好高端价位</option>
                   </select>
                   <input
                     type="text"

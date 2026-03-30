@@ -3,11 +3,15 @@ from pydantic import BaseModel
 
 class UserProfilePayload(BaseModel):
     preferred_brand: list[str] | None = None
+    favorite_brands: list[str] | None = None
     budget_range: list[int] | None = None
     interests: list[str] | None = None
     category: str | None = None
     preferred_categories: list[str] | None = None
+    recent_categories: list[str] | None = None
+    recent_clicked_product_ids: list[int] | None = None
     price_sensitivity: str | None = None
+    price_band_preference: str | None = None
     city: str | None = None
 
 

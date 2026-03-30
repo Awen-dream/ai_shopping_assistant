@@ -31,6 +31,24 @@ SCENARIO_MATCH_KEYWORDS = {
     "游戏": ["高性能", "性能", "流畅"],
 }
 
+PRICE_BAND_THRESHOLDS = {
+    "耳机": (1000, 2500),
+    "手机": (3500, 6500),
+    "笔记本": (6000, 10000),
+}
+
+
+def classify_price_band(price: float, category: str | None = None) -> str:
+    if price is None:
+        return "unknown"
+
+    budget_ceiling, mid_ceiling = PRICE_BAND_THRESHOLDS.get(category or "", (3000, 7000))
+    if price <= budget_ceiling:
+        return "budget"
+    if price <= mid_ceiling:
+        return "mid"
+    return "premium"
+
 def classify_intent_rule(query: str) -> str:
     q = query.lower()
     for cat, kws in CATEGORY_KEYWORDS.items():
@@ -116,6 +134,7 @@ class QueryContextBuilder:
         user_profile = user_profile or {}
         category = user_profile.get("category") or classify_intent_rule(query) or ""
         preferred_brand = user_profile.get("preferred_brand") or []
+        favorite_brands = user_profile.get("favorite_brands") or []
         interests = user_profile.get("interests") or []
         required_features = user_profile.get("required_features") or []
         scenario = user_profile.get("scenario") or ""
@@ -139,11 +158,15 @@ class QueryContextBuilder:
             "raw_query": query,
             "category": category,
             "preferred_brand": preferred_brand,
+            "favorite_brands": favorite_brands,
             "budget_range": user_profile.get("budget_range", [0, 999999]),
             "interests": interests,
             "required_features": required_features,
             "preferred_categories": user_profile.get("preferred_categories", []),
+            "recent_categories": user_profile.get("recent_categories", []),
+            "recent_clicked_product_ids": user_profile.get("recent_clicked_product_ids", []),
             "price_sensitivity": user_profile.get("price_sensitivity", "medium"),
+            "price_band_preference": user_profile.get("price_band_preference", "flexible"),
             "scenario": scenario,
             "sort_preference": sort_preference,
             "urgency": urgency,
@@ -223,10 +246,15 @@ class Ranker:
             if feature.lower() in product_text
         ]
 
+        product_price_band = classify_price_band(product.get("price", 0), product.get("category"))
         category_match = 1 if query_context["category"] and product.get("category") == query_context["category"] else 0
         brand_match = 1 if query_context["preferred_brand"] and product.get("brand") in query_context["preferred_brand"] else 0
+        behavior_brand_match = 1 if query_context["favorite_brands"] and product.get("brand") in query_context["favorite_brands"] else 0
         budget_low, budget_high = query_context["budget_range"]
         budget_match = 1 if budget_low <= product.get("price", 0) <= budget_high else 0
+        behavior_category_match = 1 if query_context["recent_categories"] and product.get("category") in query_context["recent_categories"] else 0
+        recent_product_match = 1 if product.get("id") in query_context["recent_clicked_product_ids"] else 0
+        price_band_match = 1 if query_context["price_band_preference"] in {"budget", "mid", "premium"} and product_price_band == query_context["price_band_preference"] else 0
         rating_score = min(product.get("rating", 0) / 5.0, 1.0)
         interest_score = min(len(matched_interests) / max(len(query_context["interests"]), 1), 1.0) if query_context["interests"] else 0.0
         required_feature_score = (
@@ -266,7 +294,12 @@ class Ranker:
             "matched_required_features": matched_required_features,
             "category_match": bool(category_match),
             "brand_match": bool(brand_match),
+            "behavior_brand_match": bool(behavior_brand_match),
             "budget_match": bool(budget_match),
+            "behavior_category_match": bool(behavior_category_match),
+            "recent_product_match": bool(recent_product_match),
+            "price_band_match": bool(price_band_match),
+            "product_price_band": product_price_band,
             "interest_score": interest_score,
             "required_feature_score": required_feature_score,
             "rating_score": rating_score,
@@ -303,6 +336,10 @@ class Ranker:
             0.04 * detail["sales_score"] +
             0.03 * detail["promotion_score"] +
             0.02 * detail["inventory_score"] +
+            0.05 * (1.0 if detail["behavior_brand_match"] else 0.0) +
+            0.04 * (1.0 if detail["behavior_category_match"] else 0.0) +
+            0.03 * (1.0 if detail["recent_product_match"] else 0.0) +
+            0.03 * (1.0 if detail["price_band_match"] else 0.0) +
             price_sensitivity_bonus
         )
         return score, detail
@@ -335,14 +372,23 @@ class ReasonGenerator:
             reasons.append(f"匹配你要找的{product.get('category')}")
         if detail.get("brand_match"):
             reasons.append(f"命中品牌偏好 {product.get('brand')}")
+        if detail.get("behavior_brand_match"):
+            reasons.append(f"贴合你近期偏好的品牌 {product.get('brand')}")
         if detail.get("matched_interests"):
             reasons.append(f"命中诉求：{'/'.join(detail['matched_interests'])}")
         if detail.get("matched_required_features"):
             reasons.append(f"核心特性匹配：{'/'.join(detail['matched_required_features'][:2])}")
+        if detail.get("behavior_category_match"):
+            reasons.append(f"延续你近期关注的{product.get('category')}类目")
+        if detail.get("recent_product_match"):
+            reasons.append("和你最近浏览的商品方向一致")
         if user_profile.get("scenario") and detail.get("scenario_score", 0) > 0:
             reasons.append(f"适合{user_profile.get('scenario')}场景")
         if detail.get("budget_match"):
             reasons.append("价格在预算范围内")
+        if detail.get("price_band_match") and detail.get("product_price_band") != "unknown":
+            band_labels = {"budget": "入门价位", "mid": "主流价位", "premium": "高端价位"}
+            reasons.append(f"符合你常看的{band_labels.get(detail['product_price_band'], '价格带')}")
         if product.get("promotion_tag"):
             reasons.append(f"当前活动：{product.get('promotion_tag')}")
         if product.get("monthly_sales", 0) >= 3000:

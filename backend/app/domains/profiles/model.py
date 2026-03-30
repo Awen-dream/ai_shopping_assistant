@@ -4,11 +4,15 @@ from datetime import datetime, timezone
 
 DEFAULT_USER_PROFILE = {
     "preferred_brand": [],
+    "favorite_brands": [],
     "budget_range": [0, 15000],
     "interests": [],
     "category": "",
     "preferred_categories": [],
+    "recent_categories": [],
+    "recent_clicked_product_ids": [],
     "price_sensitivity": "medium",
+    "price_band_preference": "flexible",
     "scenario": "",
     "sort_preference": "balanced",
     "urgency": "normal",
@@ -26,6 +30,21 @@ def _normalize_list(value) -> list[str]:
     return [str(item) for item in value if item]
 
 
+def _normalize_int_list(value) -> list[int]:
+    if not value:
+        return []
+    if isinstance(value, (str, int)):
+        value = [value]
+
+    normalized = []
+    for item in value:
+        try:
+            normalized.append(int(item))
+        except (TypeError, ValueError):
+            continue
+    return normalized
+
+
 def normalize_profile(user_id: str, payload: dict | None) -> dict:
     normalized = deepcopy(DEFAULT_USER_PROFILE)
     if payload:
@@ -37,11 +56,15 @@ def normalize_profile(user_id: str, payload: dict | None) -> dict:
 
     normalized["user_id"] = user_id
     normalized["preferred_brand"] = _normalize_list(normalized.get("preferred_brand"))
+    normalized["favorite_brands"] = _normalize_list(normalized.get("favorite_brands"))
     normalized["budget_range"] = [int(budget_range[0]), int(budget_range[1])]
     normalized["interests"] = _normalize_list(normalized.get("interests"))
     normalized["preferred_categories"] = _normalize_list(normalized.get("preferred_categories"))
+    normalized["recent_categories"] = _normalize_list(normalized.get("recent_categories"))
+    normalized["recent_clicked_product_ids"] = _normalize_int_list(normalized.get("recent_clicked_product_ids"))
     normalized["category"] = normalized.get("category") or ""
     normalized["price_sensitivity"] = normalized.get("price_sensitivity") or "medium"
+    normalized["price_band_preference"] = normalized.get("price_band_preference") or "flexible"
     normalized["scenario"] = normalized.get("scenario") or ""
     normalized["sort_preference"] = normalized.get("sort_preference") or "balanced"
     normalized["urgency"] = normalized.get("urgency") or "normal"
@@ -62,12 +85,26 @@ def merge_profiles(base_profile: dict | None, query_profile: dict | None) -> dic
     merged["preferred_brand"] = list(
         dict.fromkeys((base_profile or {}).get("preferred_brand", []) + (query_profile or {}).get("preferred_brand", []))
     )
+    merged["favorite_brands"] = list(
+        dict.fromkeys((base_profile or {}).get("favorite_brands", []) + (query_profile or {}).get("favorite_brands", []))
+    )
     merged["interests"] = list(
         dict.fromkeys((base_profile or {}).get("interests", []) + (query_profile or {}).get("interests", []))
     )
     merged["preferred_categories"] = list(
         dict.fromkeys(
             (base_profile or {}).get("preferred_categories", []) + (query_profile or {}).get("preferred_categories", [])
+        )
+    )
+    merged["recent_categories"] = list(
+        dict.fromkeys(
+            (base_profile or {}).get("recent_categories", []) + (query_profile or {}).get("recent_categories", [])
+        )
+    )
+    merged["recent_clicked_product_ids"] = list(
+        dict.fromkeys(
+            (base_profile or {}).get("recent_clicked_product_ids", []) +
+            (query_profile or {}).get("recent_clicked_product_ids", [])
         )
     )
     merged["required_features"] = list(
@@ -85,6 +122,9 @@ def merge_profiles(base_profile: dict | None, query_profile: dict | None) -> dic
     merged["price_sensitivity"] = (query_profile or {}).get("price_sensitivity") or (
         base_profile or {}
     ).get("price_sensitivity", "medium")
+    merged["price_band_preference"] = (query_profile or {}).get("price_band_preference") or (
+        base_profile or {}
+    ).get("price_band_preference", "flexible")
     merged["scenario"] = (query_profile or {}).get("scenario") or (base_profile or {}).get("scenario", "")
     merged["sort_preference"] = (query_profile or {}).get("sort_preference") or (
         base_profile or {}
