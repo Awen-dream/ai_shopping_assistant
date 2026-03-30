@@ -26,6 +26,9 @@ const EMPTY_PRODUCT_FORM = {
   price: "",
   rating: "",
   tags: "",
+  featureHighlights: "",
+  useCases: "",
+  targetUsers: "",
   monthlySales: "",
   promotionTag: "",
   inventoryTotal: "",
@@ -56,6 +59,11 @@ function mapProductToForm(product) {
     price: product.price ?? "",
     rating: product.rating ?? "",
     tags: Array.isArray(product.tags) ? product.tags.join(", ") : "",
+    featureHighlights: Array.isArray(product.feature_highlights)
+      ? product.feature_highlights.join(", ")
+      : "",
+    useCases: Array.isArray(product.use_cases) ? product.use_cases.join(", ") : "",
+    targetUsers: Array.isArray(product.target_users) ? product.target_users.join(", ") : "",
     monthlySales: product.monthly_sales ?? "",
     promotionTag: product.promotion_tag || "",
     inventoryTotal: product.inventory_total ?? "",
@@ -74,6 +82,18 @@ function buildProductPayload(form) {
     tags: form.tags
       .split(",")
       .map((tag) => tag.trim())
+      .filter(Boolean),
+    feature_highlights: form.featureHighlights
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean),
+    use_cases: form.useCases
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean),
+    target_users: form.targetUsers
+      .split(",")
+      .map((item) => item.trim())
       .filter(Boolean),
     monthly_sales: Number(form.monthlySales || 0),
     promotion_tag: form.promotionTag.trim(),
@@ -1575,6 +1595,27 @@ export default function App() {
                       value={productForm.tags}
                       onChange={(e) => handleProductFormChange("tags", e.target.value)}
                       placeholder="标签，逗号分隔"
+                      className="field"
+                    />
+                    <input
+                      type="text"
+                      value={productForm.featureHighlights}
+                      onChange={(e) => handleProductFormChange("featureHighlights", e.target.value)}
+                      placeholder="核心卖点，逗号分隔"
+                      className="field"
+                    />
+                    <input
+                      type="text"
+                      value={productForm.useCases}
+                      onChange={(e) => handleProductFormChange("useCases", e.target.value)}
+                      placeholder="适用场景，逗号分隔"
+                      className="field"
+                    />
+                    <input
+                      type="text"
+                      value={productForm.targetUsers}
+                      onChange={(e) => handleProductFormChange("targetUsers", e.target.value)}
+                      placeholder="目标人群，逗号分隔"
                       className="field"
                     />
                   </div>

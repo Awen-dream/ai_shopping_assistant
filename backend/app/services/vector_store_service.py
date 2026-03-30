@@ -1,4 +1,5 @@
 import json
+import hashlib
 from pathlib import Path
 from typing import List
 
@@ -27,6 +28,16 @@ _RUNTIME_VECTOR_STORE_OVERRIDE = None
 
 def build_product_text(product: dict) -> str:
     return domain_build_product_text(product)
+
+
+def build_products_signature(products: List[dict]) -> str:
+    hasher = hashlib.sha256()
+    for product in products:
+        hasher.update(str(product.get("id", "")).encode("utf-8"))
+        hasher.update(b"|")
+        hasher.update(build_product_text(product).encode("utf-8"))
+        hasher.update(b"\n")
+    return hasher.hexdigest()
 
 
 def get_product_index_metadata_path() -> Path:
@@ -106,6 +117,9 @@ class BaseFaissVectorStore(BaseVectorStore):
             if metadata.get("product_ids") != expected_ids:
                 self.load_source = "persisted_metadata_mismatch"
                 return False
+            if metadata.get("product_content_signature") != build_products_signature(self.products):
+                self.load_source = "persisted_content_mismatch"
+                return False
             if metadata.get("embedding_model") != get_embedding_model():
                 self.load_source = "persisted_model_mismatch"
                 return False
@@ -146,6 +160,7 @@ class BaseFaissVectorStore(BaseVectorStore):
         metadata = {
             "embedding_model": get_embedding_model(),
             "product_ids": [product["id"] for product in self.products],
+            "product_content_signature": build_products_signature(self.products),
             "product_count": len(self.products),
             "backend": self.backend_name,
         }

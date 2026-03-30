@@ -14,6 +14,21 @@
       "旗舰",
       "高性能"
     ],
+    "feature_highlights": [
+      "钛金属机身",
+      "高端影像",
+      "旗舰性能"
+    ],
+    "use_cases": [
+      "摄影创作",
+      "商务出行",
+      "高端换机"
+    ],
+    "target_users": [
+      "摄影爱好者",
+      "商务人士",
+      "Apple 用户"
+    ],
     "monthly_sales": 3200,
     "promotion_tag": "以旧换新补贴",
     "inventory_total": 86,
@@ -76,9 +91,28 @@
     "rating": 4.7,
     "tags": [
       "拍照",
+      "影像",
       "旗舰",
       "性价比",
       "轻便"
+    ],
+    "feature_highlights": [
+      "徕卡影像",
+      "旗舰性能",
+      "轻巧手感",
+      "高性价比拍照"
+    ],
+    "use_cases": [
+      "日常拍照",
+      "高性价比换机",
+      "通勤使用",
+      "旅行记录"
+    ],
+    "target_users": [
+      "学生党",
+      "预算敏感用户",
+      "安卓用户",
+      "拍照爱好者"
     ],
     "monthly_sales": 5300,
     "promotion_tag": "直降 300 元",
@@ -146,6 +180,21 @@
       "续航",
       "苹果生态"
     ],
+    "feature_highlights": [
+      "超长续航",
+      "安静轻薄",
+      "苹果生态协同"
+    ],
+    "use_cases": [
+      "办公学习",
+      "差旅出行",
+      "轻量创作"
+    ],
+    "target_users": [
+      "学生",
+      "内容创作者",
+      "Apple 生态用户"
+    ],
     "monthly_sales": 2900,
     "promotion_tag": "教育优惠",
     "inventory_total": 61,
@@ -211,6 +260,21 @@
       "办公",
       "学生",
       "性价比"
+    ],
+    "feature_highlights": [
+      "高性价比",
+      "均衡性能",
+      "大屏办公"
+    ],
+    "use_cases": [
+      "校园学习",
+      "日常办公",
+      "预算内换机"
+    ],
+    "target_users": [
+      "学生",
+      "职场新人",
+      "预算型用户"
     ],
     "monthly_sales": 4600,
     "promotion_tag": "国补专区",
@@ -278,6 +342,21 @@
       "旅行",
       "头戴"
     ],
+    "feature_highlights": [
+      "旗舰降噪",
+      "长时间佩戴舒适",
+      "便携收纳"
+    ],
+    "use_cases": [
+      "通勤出行",
+      "长途飞行",
+      "沉浸办公"
+    ],
+    "target_users": [
+      "通勤人群",
+      "差旅用户",
+      "音乐爱好者"
+    ],
     "monthly_sales": 2500,
     "promotion_tag": "赠收纳包",
     "inventory_total": 64,
@@ -310,6 +389,21 @@
       "真无线",
       "通勤",
       "苹果生态"
+    ],
+    "feature_highlights": [
+      "空间音频",
+      "无缝设备切换",
+      "便携降噪"
+    ],
+    "use_cases": [
+      "日常佩戴",
+      "iPhone 配套",
+      "运动出街"
+    ],
+    "target_users": [
+      "iPhone 用户",
+      "轻量佩戴用户",
+      "Apple 生态用户"
     ],
     "monthly_sales": 6200,
     "promotion_tag": "会员立减",
@@ -439,5 +533,293 @@
       }
     ],
     "id": 15
+  },
+  {
+    "id": 16,
+    "name": "OnePlus Ace 3",
+    "description": "偏性能取向的高性价比手机，适合游戏娱乐和日常高刷体验。",
+    "category": "手机",
+    "subcategory": "性能手机",
+    "brand": "OnePlus",
+    "price": 2999,
+    "rating": 4.6,
+    "tags": [
+      "性能",
+      "游戏",
+      "高刷",
+      "性价比"
+    ],
+    "feature_highlights": [
+      "大电池快充",
+      "高刷流畅体验",
+      "性能释放稳定"
+    ],
+    "use_cases": [
+      "游戏娱乐",
+      "日常高频使用",
+      "预算内换机"
+    ],
+    "target_users": [
+      "手游用户",
+      "年轻用户",
+      "预算敏感用户"
+    ],
+    "monthly_sales": 3600,
+    "promotion_tag": "限时直降",
+    "inventory_total": 118,
+    "warehouses": [
+      {
+        "name": "华东仓",
+        "stock": 40
+      },
+      {
+        "name": "华南仓",
+        "stock": 36
+      },
+      {
+        "name": "华中仓",
+        "stock": 42
+      }
+    ]
+  },
+  {
+    "id": 17,
+    "name": "vivo X100",
+    "description": "偏影像与人像表现的旗舰手机，适合日常记录和精致拍摄需求。",
+    "category": "手机",
+    "subcategory": "影像手机",
+    "brand": "vivo",
+    "price": 5299,
+    "rating": 4.7,
+    "tags": [
+      "影像",
+      "人像",
+      "旗舰",
+      "夜景"
+    ],
+    "feature_highlights": [
+      "蔡司影像",
+      "人像肤色自然",
+      "旗舰手感"
+    ],
+    "use_cases": [
+      "人像拍摄",
+      "旅行记录",
+      "社交分享"
+    ],
+    "target_users": [
+      "拍照爱好者",
+      "内容分享用户",
+      "年轻女性用户"
+    ],
+    "monthly_sales": 2400,
+    "promotion_tag": "赠原装耳机",
+    "inventory_total": 88,
+    "warehouses": [
+      {
+        "name": "华东仓",
+        "stock": 30
+      },
+      {
+        "name": "华南仓",
+        "stock": 28
+      },
+      {
+        "name": "西南仓",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 18,
+    "name": "ASUS Zenbook 14",
+    "description": "便携轻薄本，适合差旅办公、轻创作和长时间移动使用。",
+    "category": "笔记本",
+    "subcategory": "轻薄本",
+    "brand": "ASUS",
+    "price": 6999,
+    "rating": 4.6,
+    "tags": [
+      "轻薄",
+      "办公",
+      "差旅",
+      "OLED"
+    ],
+    "feature_highlights": [
+      "便携机身",
+      "高素质 OLED 屏",
+      "长续航办公"
+    ],
+    "use_cases": [
+      "差旅办公",
+      "咖啡馆办公",
+      "轻量创作"
+    ],
+    "target_users": [
+      "差旅用户",
+      "自由职业者",
+      "轻办公用户"
+    ],
+    "monthly_sales": 1750,
+    "promotion_tag": "晒单返现",
+    "inventory_total": 54,
+    "warehouses": [
+      {
+        "name": "华东仓",
+        "stock": 18
+      },
+      {
+        "name": "华南仓",
+        "stock": 17
+      },
+      {
+        "name": "华北仓",
+        "stock": 19
+      }
+    ]
+  },
+  {
+    "id": 19,
+    "name": "HP Pavilion Plus 14",
+    "description": "主流价位轻薄本，适合学习办公和多任务日常使用。",
+    "category": "笔记本",
+    "subcategory": "轻薄本",
+    "brand": "HP",
+    "price": 5799,
+    "rating": 4.5,
+    "tags": [
+      "学生",
+      "办公",
+      "轻薄",
+      "高分屏"
+    ],
+    "feature_highlights": [
+      "高分辨率屏幕",
+      "均衡续航",
+      "价格友好"
+    ],
+    "use_cases": [
+      "校园学习",
+      "日常办公",
+      "宿舍追剧"
+    ],
+    "target_users": [
+      "学生",
+      "家用办公用户",
+      "入门创作者"
+    ],
+    "monthly_sales": 2100,
+    "promotion_tag": "学生加赠礼包",
+    "inventory_total": 96,
+    "warehouses": [
+      {
+        "name": "华东仓",
+        "stock": 32
+      },
+      {
+        "name": "华中仓",
+        "stock": 30
+      },
+      {
+        "name": "西南仓",
+        "stock": 34
+      }
+    ]
+  },
+  {
+    "id": 20,
+    "name": "Soundcore Liberty 4 NC",
+    "description": "高续航真无线耳机，强调通话和全天佩戴体验，适合日常随身使用。",
+    "category": "耳机",
+    "subcategory": "真无线耳机",
+    "brand": "Soundcore",
+    "price": 699,
+    "rating": 4.6,
+    "tags": [
+      "真无线",
+      "续航",
+      "通话",
+      "性价比"
+    ],
+    "feature_highlights": [
+      "全天续航",
+      "佩戴轻盈",
+      "通话清晰"
+    ],
+    "use_cases": [
+      "日常随身",
+      "在线会议",
+      "轻运动出行"
+    ],
+    "target_users": [
+      "学生",
+      "通话需求用户",
+      "预算型耳机用户"
+    ],
+    "monthly_sales": 3400,
+    "promotion_tag": "加价购保护套",
+    "inventory_total": 144,
+    "warehouses": [
+      {
+        "name": "华东仓",
+        "stock": 50
+      },
+      {
+        "name": "华南仓",
+        "stock": 46
+      },
+      {
+        "name": "华北仓",
+        "stock": 48
+      }
+    ]
+  },
+  {
+    "id": 21,
+    "name": "Sennheiser Momentum 4",
+    "description": "兼顾音质与舒适度的头戴耳机，适合深度听音和长途旅行使用。",
+    "category": "耳机",
+    "subcategory": "头戴耳机",
+    "brand": "Sennheiser",
+    "price": 2499,
+    "rating": 4.7,
+    "tags": [
+      "音质",
+      "头戴",
+      "旅行",
+      "降噪"
+    ],
+    "feature_highlights": [
+      "耐听音色",
+      "长时间佩戴舒适",
+      "长续航表现"
+    ],
+    "use_cases": [
+      "深度听音",
+      "长途旅行",
+      "安静办公"
+    ],
+    "target_users": [
+      "音乐爱好者",
+      "旅行用户",
+      "头戴耳机用户"
+    ],
+    "monthly_sales": 1280,
+    "promotion_tag": "会员专属券",
+    "inventory_total": 57,
+    "warehouses": [
+      {
+        "name": "华东仓",
+        "stock": 19
+      },
+      {
+        "name": "华南仓",
+        "stock": 18
+      },
+      {
+        "name": "华北仓",
+        "stock": 20
+      }
+    ]
   }
 ]

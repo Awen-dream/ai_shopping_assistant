@@ -6,6 +6,9 @@ def build_product_text(product: dict) -> str:
         product.get("subcategory", ""),
         product.get("brand", ""),
         " ".join(product.get("tags", [])),
+        " ".join(product.get("feature_highlights", [])),
+        " ".join(product.get("use_cases", [])),
+        " ".join(product.get("target_users", [])),
         product.get("promotion_tag", ""),
     ]
     return " ".join(part for part in fields if part)

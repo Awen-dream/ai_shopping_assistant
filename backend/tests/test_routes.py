@@ -51,6 +51,19 @@ def test_query_uses_persisted_user_profile():
     assert payload["results"][0]["best_offer"]["fulfillment_warehouse"] == "华东仓"
 
 
+def test_behavior_profile_query_prefers_value_laptop_for_student():
+    response = client.get(
+        "/multi-agent-task",
+        params={"q": "性价比笔记本", "user_id": "demo_student"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["results"]
+    assert payload["results"][0]["name"] == "Lenovo Xiaoxin Pro 14"
+    assert payload["results"][0]["price"] <= 6000
+
+
 def test_stage3_price_and_inventory_fields_are_exposed():
     response = client.get(
         "/multi-agent-task",
@@ -256,11 +269,12 @@ def test_analytics_evaluation_returns_summary_and_cases():
 
     assert response.status_code == 200
     evaluation = response.json()["evaluation"]
-    assert evaluation["summary"]["total_cases"] >= 5
+    assert evaluation["summary"]["total_cases"] >= 10
     assert evaluation["summary"]["category_hit_rate"] >= 0.8
     assert evaluation["summary"]["top1_hit_rate"] >= 0.8
     assert evaluation["cases"]
     assert any(case["case_id"] == "commute_noise_canceling_headphones" for case in evaluation["cases"])
+    assert any(case["case_id"] == "student_profile_value_laptop" for case in evaluation["cases"])
 
 
 def test_products_endpoint_returns_catalog():
@@ -284,6 +298,9 @@ def test_create_product_returns_vector_sync_status():
             "price": 1999,
             "rating": 4.6,
             "tags": ["降噪", "测试"],
+            "feature_highlights": ["长续航", "舒适佩戴"],
+            "use_cases": ["通勤", "差旅"],
+            "target_users": ["上班族", "学生"],
             "monthly_sales": 99,
             "promotion_tag": "测试活动",
             "inventory_total": 20,
@@ -294,4 +311,6 @@ def test_create_product_returns_vector_sync_status():
     assert response.status_code == 200
     payload = response.json()
     assert payload["product"]["name"] == "QA Demo Headphones"
+    assert payload["product"]["use_cases"] == ["通勤", "差旅"]
+    assert payload["product"]["target_users"] == ["上班族", "学生"]
     assert "vector_status" in payload

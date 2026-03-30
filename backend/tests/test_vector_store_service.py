@@ -36,9 +36,41 @@ def test_build_product_text_includes_stage2_fields():
             "subcategory": "轻薄本",
             "brand": "Apple",
             "tags": ["轻薄", "办公"],
+            "feature_highlights": ["长续航", "静音设计"],
+            "use_cases": ["学习", "差旅"],
+            "target_users": ["学生", "内容创作者"],
             "promotion_tag": "教育优惠",
         }
     )
 
     assert "轻薄本" in text
     assert "教育优惠" in text
+    assert "差旅" in text
+    assert "内容创作者" in text
+
+
+def test_build_products_signature_changes_when_product_text_changes():
+    products = [
+        {
+            "id": 1,
+            "name": "MacBook Air M3",
+            "description": "light laptop",
+            "category": "笔记本",
+            "tags": ["轻薄"],
+        }
+    ]
+
+    original_signature = vector_store_service.build_products_signature(products)
+    changed_signature = vector_store_service.build_products_signature(
+        [
+            {
+                "id": 1,
+                "name": "MacBook Air M3",
+                "description": "light laptop with OLED",
+                "category": "笔记本",
+                "tags": ["轻薄"],
+            }
+        ]
+    )
+
+    assert original_signature != changed_signature

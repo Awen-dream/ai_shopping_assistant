@@ -10,6 +10,9 @@ DEFAULT_PRODUCT = {
     "price": 0,
     "rating": 0,
     "tags": [],
+    "feature_highlights": [],
+    "use_cases": [],
+    "target_users": [],
     "monthly_sales": 0,
     "promotion_tag": "",
     "inventory_total": 0,
@@ -25,6 +28,15 @@ def normalize_product(product_id: int, payload: dict | None) -> dict:
     tags = normalized.get("tags") or []
     if isinstance(tags, str):
         tags = [tags]
+    feature_highlights = normalized.get("feature_highlights") or []
+    if isinstance(feature_highlights, str):
+        feature_highlights = [feature_highlights]
+    use_cases = normalized.get("use_cases") or []
+    if isinstance(use_cases, str):
+        use_cases = [use_cases]
+    target_users = normalized.get("target_users") or []
+    if isinstance(target_users, str):
+        target_users = [target_users]
 
     warehouses = normalized.get("warehouses") or []
     normalized_warehouses = []
@@ -47,6 +59,9 @@ def normalize_product(product_id: int, payload: dict | None) -> dict:
     normalized["price"] = float(normalized.get("price", 0))
     normalized["rating"] = float(normalized.get("rating", 0))
     normalized["tags"] = tags
+    normalized["feature_highlights"] = [str(item) for item in feature_highlights if item]
+    normalized["use_cases"] = [str(item) for item in use_cases if item]
+    normalized["target_users"] = [str(item) for item in target_users if item]
     normalized["monthly_sales"] = int(normalized.get("monthly_sales", 0))
     normalized["promotion_tag"] = normalized.get("promotion_tag", "")
     normalized["inventory_total"] = int(normalized.get("inventory_total", 0))

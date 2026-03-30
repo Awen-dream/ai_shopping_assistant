@@ -29,6 +29,9 @@ class ProductPayload(BaseModel):
     price: float | None = None
     rating: float | None = None
     tags: list[str] | None = None
+    feature_highlights: list[str] | None = None
+    use_cases: list[str] | None = None
+    target_users: list[str] | None = None
     monthly_sales: int | None = None
     promotion_tag: str | None = None
     inventory_total: int | None = None
