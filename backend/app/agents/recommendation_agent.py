@@ -245,6 +245,21 @@ class Ranker:
             feature for feature in query_context["required_features"]
             if feature.lower() in product_text
         ]
+        feature_highlights = [item.lower() for item in product.get("feature_highlights", [])]
+        use_cases = [item.lower() for item in product.get("use_cases", [])]
+        target_users = [item.lower() for item in product.get("target_users", [])]
+        matched_feature_highlights = [
+            item for item in product.get("feature_highlights", [])
+            if any(term in item.lower() for term in query_context["terms"])
+        ]
+        matched_use_cases = [
+            item for item in product.get("use_cases", [])
+            if any(term in item.lower() for term in query_context["terms"])
+        ]
+        matched_target_users = [
+            item for item in product.get("target_users", [])
+            if any(term in item.lower() for term in query_context["terms"])
+        ]
 
         product_price_band = classify_price_band(product.get("price", 0), product.get("category"))
         category_match = 1 if query_context["category"] and product.get("category") == query_context["category"] else 0
@@ -261,6 +276,18 @@ class Ranker:
             min(len(matched_required_features) / max(len(query_context["required_features"]), 1), 1.0)
             if query_context["required_features"] else 0.0
         )
+        feature_highlight_score = min(
+            len(matched_feature_highlights) / max(len(product.get("feature_highlights", [])), 1),
+            1.0,
+        ) if product.get("feature_highlights") else 0.0
+        use_case_score = min(
+            len(matched_use_cases) / max(len(product.get("use_cases", [])), 1),
+            1.0,
+        ) if product.get("use_cases") else 0.0
+        target_user_score = min(
+            len(matched_target_users) / max(len(product.get("target_users", [])), 1),
+            1.0,
+        ) if product.get("target_users") else 0.0
         sales_score = min(product.get("monthly_sales", 0) / 10000.0, 1.0)
         promotion_score = 1.0 if product.get("promotion_tag") else 0.0
         inventory_score = min(product.get("inventory_total", 0) / 200.0, 1.0)
@@ -269,12 +296,18 @@ class Ranker:
             scenario_hits = [
                 keyword for keyword in SCENARIO_MATCH_KEYWORDS.get(query_context["scenario"], [])
                 if keyword.lower() in product_text
+                or any(keyword.lower() in use_case for use_case in use_cases)
+                or any(keyword.lower() in target_user for target_user in target_users)
             ]
             scenario_score = min(len(scenario_hits) / max(len(SCENARIO_MATCH_KEYWORDS.get(query_context["scenario"], [])), 1), 1.0)
         budget_ceiling = max(budget_high, 1)
         affordability_score = max(0.0, min(1.0, 1 - (product.get("price", 0) / budget_ceiling))) if budget_high else 0.0
-        portability_score = 1.0 if any(keyword in product_text for keyword in ["轻薄", "轻便", "便携"]) else 0.0
-        performance_score = 1.0 if any(keyword in product_text for keyword in ["高性能", "旗舰", "流畅"]) else 0.0
+        portability_score = 1.0 if any(keyword in product_text for keyword in ["轻薄", "轻便", "便携"]) or any(
+            any(keyword in item for keyword in ["轻薄", "轻便", "便携"]) for item in feature_highlights + use_cases
+        ) else 0.0
+        performance_score = 1.0 if any(keyword in product_text for keyword in ["高性能", "旗舰", "流畅"]) or any(
+            any(keyword in item for keyword in ["高性能", "旗舰", "流畅"]) for item in feature_highlights
+        ) else 0.0
 
         sort_bonus = 0.0
         if query_context["sort_preference"] == "price":
@@ -292,6 +325,9 @@ class Ranker:
             "matched_terms": matched_terms,
             "matched_interests": matched_interests,
             "matched_required_features": matched_required_features,
+            "matched_feature_highlights": matched_feature_highlights,
+            "matched_use_cases": matched_use_cases,
+            "matched_target_users": matched_target_users,
             "category_match": bool(category_match),
             "brand_match": bool(brand_match),
             "behavior_brand_match": bool(behavior_brand_match),
@@ -302,6 +338,9 @@ class Ranker:
             "product_price_band": product_price_band,
             "interest_score": interest_score,
             "required_feature_score": required_feature_score,
+            "feature_highlight_score": feature_highlight_score,
+            "use_case_score": use_case_score,
+            "target_user_score": target_user_score,
             "rating_score": rating_score,
             "sales_score": sales_score,
             "promotion_score": promotion_score,
@@ -331,6 +370,9 @@ class Ranker:
             self.weights["budget"] * (1.0 if detail["budget_match"] else 0.0) +
             self.weights["rating"] * detail["rating_score"] +
             0.06 * detail["required_feature_score"] +
+            0.05 * detail["feature_highlight_score"] +
+            0.04 * detail["use_case_score"] +
+            0.03 * detail["target_user_score"] +
             0.04 * detail["scenario_score"] +
             0.04 * detail["sort_bonus"] +
             0.04 * detail["sales_score"] +
@@ -384,6 +426,12 @@ class ReasonGenerator:
             reasons.append("和你最近浏览的商品方向一致")
         if user_profile.get("scenario") and detail.get("scenario_score", 0) > 0:
             reasons.append(f"适合{user_profile.get('scenario')}场景")
+        if detail.get("matched_use_cases"):
+            reasons.append(f"适用场景贴合：{'/'.join(detail['matched_use_cases'][:2])}")
+        if detail.get("matched_target_users"):
+            reasons.append(f"面向人群匹配：{'/'.join(detail['matched_target_users'][:2])}")
+        if detail.get("matched_feature_highlights"):
+            reasons.append(f"卖点命中：{'/'.join(detail['matched_feature_highlights'][:2])}")
         if detail.get("budget_match"):
             reasons.append("价格在预算范围内")
         if detail.get("price_band_match") and detail.get("product_price_band") != "unknown":
@@ -508,6 +556,9 @@ class RecommendationAgent:
                 "matched_terms": detail.get("matched_terms", [])[:4],
                 "matched_interests": detail.get("matched_interests", []),
                 "matched_required_features": detail.get("matched_required_features", []),
+                "matched_feature_highlights": detail.get("matched_feature_highlights", []),
+                "matched_use_cases": detail.get("matched_use_cases", []),
+                "matched_target_users": detail.get("matched_target_users", []),
                 "category_match": detail.get("category_match", False),
                 "brand_match": detail.get("brand_match", False),
                 "budget_match": detail.get("budget_match", False),

@@ -171,3 +171,21 @@ def test_recommendation_reason_mentions_behavioral_profile_signals():
 
     assert result["name"] == "Lenovo Xiaoxin Pro 14"
     assert "近期偏好的品牌" in result["reason"] or "近期关注的笔记本类目" in result["reason"]
+
+
+def test_use_case_signal_can_promote_new_headset_sample():
+    agent = RecommendationAgent()
+
+    result = agent.recommend("高续航真无线耳机")[0]
+
+    assert result["name"] == "Soundcore Liberty 4 NC"
+    assert result["matched_features"]["matched_use_cases"] or result["matched_features"]["matched_feature_highlights"]
+
+
+def test_recommendation_reason_mentions_new_catalog_semantic_fields():
+    agent = RecommendationAgent()
+
+    result = agent.recommend("游戏手机 预算3000")[0]
+
+    assert result["name"] == "OnePlus Ace 3"
+    assert "卖点命中" in result["reason"] or "适用场景贴合" in result["reason"]

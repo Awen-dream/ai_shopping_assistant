@@ -1,4 +1,5 @@
 from ...agents.price_agent import PriceAgent
+from .model import compare_product_prices
 
 
 def create_price_agent():
@@ -6,4 +7,4 @@ def create_price_agent():
 
 
 def compare_prices(products, user_profile: dict | None = None):
-    return create_price_agent().compare(products, user_profile=user_profile)
+    return compare_product_prices(products, user_profile=user_profile)

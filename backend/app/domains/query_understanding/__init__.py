@@ -1,14 +1,27 @@
-from ...agents.intent_agent import (
+from ...agents.intent_agent import IntentAgent
+from .model import (
     BRAND_KEYWORDS,
     CATEGORY_KEYWORDS,
     DEFAULT_PROFILE,
     FEATURE_KEYWORDS,
     FULFILLMENT_PREFERENCE_KEYWORDS,
     INTEREST_KEYWORDS,
-    IntentAgent,
     SCENARIO_KEYWORDS,
     SORT_PREFERENCE_KEYWORDS,
     URGENCY_KEYWORDS,
+    clean_json,
+    extract_brands,
+    extract_budget_range,
+    extract_category,
+    extract_fulfillment_preference,
+    extract_interests,
+    extract_price_sensitivity,
+    extract_required_features,
+    extract_scenario,
+    extract_sort_preference,
+    extract_urgency,
+    normalize_intent,
+    parse_rule_based_intent,
 )
 from .service import create_intent_agent, parse_query_intent
 
@@ -25,4 +38,17 @@ __all__ = [
     "URGENCY_KEYWORDS",
     "create_intent_agent",
     "parse_query_intent",
+    "clean_json",
+    "extract_brands",
+    "extract_budget_range",
+    "extract_category",
+    "extract_fulfillment_preference",
+    "extract_interests",
+    "extract_price_sensitivity",
+    "extract_required_features",
+    "extract_scenario",
+    "extract_sort_preference",
+    "extract_urgency",
+    "normalize_intent",
+    "parse_rule_based_intent",
 ]
