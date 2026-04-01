@@ -2,11 +2,13 @@ import numpy as np
 import re
 from typing import List, Dict
 
+from app.agents.intent_agent import IntentAgent
 from app.domains.catalog import list_products
-from app.domains.query_understanding import (
-    CATEGORY_KEYWORDS as INTENT_CATEGORY_KEYWORDS,
-    INTEREST_KEYWORDS,
-    IntentAgent,
+from app.domains.query_understanding.model import CATEGORY_KEYWORDS as INTENT_CATEGORY_KEYWORDS
+from app.domains.query_understanding.model import INTEREST_KEYWORDS
+from app.domains.recommendation.model import (
+    hybrid_recall_candidates,
+    recommend_products_with_components,
 )
 from app.domains.vector_index import build_product_text, create_vector_store
 
@@ -468,112 +470,32 @@ class RecommendationAgent:
         self.ranker = Ranker()
         self.reasoner = ReasonGenerator()
         self.intent_agent = IntentAgent()
+        self.category_classifier = classify_intent_rule
 
     def hybrid_recall(self, query, query_context):
-        vector_results = self.vector_retriever.search(query, topk=20)
-        keyword_results = self.keyword_retriever.search(query)
-        merged = {}
-
-        max_keyword_score = max((score for _, score in keyword_results), default=1.0)
-        vector_scores = [score for _, score in vector_results]
-        max_vector_score = max(vector_scores, default=1.0)
-        min_vector_score = min(vector_scores, default=0.0)
-
-        for product, score in keyword_results:
-            merged[product["id"]] = {
-                "product": product,
-                "keyword_score": min(score / max_keyword_score, 1.0),
-                "vector_score": 0.0,
-            }
-
-        for product, score in vector_results:
-            if max_vector_score == min_vector_score:
-                normalized_vector_score = 1.0 if max_vector_score > 0 else 0.0
-            else:
-                normalized_vector_score = (score - min_vector_score) / (max_vector_score - min_vector_score)
-            merged.setdefault(
-                product["id"],
-                {"product": product, "keyword_score": 0.0, "vector_score": 0.0},
-            )
-            merged[product["id"]]["vector_score"] = max(
-                merged[product["id"]]["vector_score"],
-                normalized_vector_score,
-            )
-
-        candidates = list(merged.values()) or [
-            {"product": product, "keyword_score": 0.0, "vector_score": 0.0}
-            for product in self.products
-        ]
-
-        if query_context["category"]:
-            candidates = [
-                item for item in candidates
-                if item["product"].get("category") == query_context["category"]
-            ] or candidates
-
-        if query_context["preferred_brand"]:
-            brand_matched = [
-                item for item in candidates
-                if item["product"].get("brand") in query_context["preferred_brand"]
-            ]
-            if brand_matched:
-                candidates = brand_matched
-
-        if query_context["preferred_categories"] and not query_context["category"]:
-            preferred_category_candidates = [
-                item for item in candidates
-                if item["product"].get("category") in query_context["preferred_categories"]
-            ]
-            if preferred_category_candidates:
-                candidates = preferred_category_candidates
-
-        budget_low, budget_high = query_context["budget_range"]
-        budget_matched = [
-            item for item in candidates
-            if budget_low <= item["product"].get("price", 0) <= budget_high
-        ]
-        if budget_matched:
-            candidates = budget_matched
-
-        return candidates
+        return hybrid_recall_candidates(
+            query,
+            query_context,
+            self.vector_retriever,
+            self.keyword_retriever,
+            self.products,
+        )
 
     def recommend(self, query: str, user_profile=None, topk=5):
-        user_profile = user_profile or self.intent_agent.parse_intent(query)
-        if not user_profile.get("category"):
-            user_profile["category"] = self.category_embedding.classify_query(query) or classify_intent_rule(query) or ""
-
-        query_context = self.query_context_builder.build(query, user_profile)
-        recalled = self.hybrid_recall(query, query_context)
-        ranked = self.ranker.rank(recalled, query_context)
-
-        top_ranked_items = ranked[:topk]
-        reasons = self.reasoner.generate_batch(top_ranked_items, user_profile)
-
-        results = []
-        for (product, score, detail), reason in zip(top_ranked_items, reasons):
-            best_match_score = round(score, 4)
-            matched_features = {
-                "matched_terms": detail.get("matched_terms", [])[:4],
-                "matched_interests": detail.get("matched_interests", []),
-                "matched_required_features": detail.get("matched_required_features", []),
-                "matched_feature_highlights": detail.get("matched_feature_highlights", []),
-                "matched_use_cases": detail.get("matched_use_cases", []),
-                "matched_target_users": detail.get("matched_target_users", []),
-                "category_match": detail.get("category_match", False),
-                "brand_match": detail.get("brand_match", False),
-                "budget_match": detail.get("budget_match", False),
-                "scenario_score": detail.get("scenario_score", 0.0),
-                "sort_bonus": detail.get("sort_bonus", 0.0),
-            }
-
-            p = product
-            item = p.copy()
-            item['reason'] = reason
-            item['match_score'] = best_match_score
-            item['matched_features'] = matched_features
-            results.append(item)
-
-        return results
+        return recommend_products_with_components(
+            query,
+            user_profile,
+            intent_agent=self.intent_agent,
+            category_embedding=self.category_embedding,
+            fallback_category_classifier=self.category_classifier,
+            query_context_builder=self.query_context_builder,
+            ranker=self.ranker,
+            reasoner=self.reasoner,
+            vector_retriever=self.vector_retriever,
+            keyword_retriever=self.keyword_retriever,
+            products=self.products,
+            topk=topk,
+        )
 
     def get_vector_status(self):
         return self.vector_retriever.vector_store.status()

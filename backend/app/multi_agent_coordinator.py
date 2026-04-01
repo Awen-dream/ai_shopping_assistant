@@ -1,9 +1,15 @@
 from .domains.inventory import apply_inventory_rules, create_inventory_agent
 from .domains.multimodal import create_image_search_agent, search_products_by_image
+from .domains.pipeline import build_safe_product_payload, normalize_intent_profile, normalize_pipeline_products
 from .domains.pricing import compare_prices, create_price_agent
 from .domains.profiles import get_user_profile, merge_profiles
-from .domains.query_understanding import create_intent_agent
-from .domains.recommendation import create_recommendation_agent, create_search_agent, search_market_offers
+from .domains.query_understanding.service import create_intent_agent
+from .domains.recommendation.service import (
+    create_recommendation_agent,
+    create_search_agent,
+    recommend_with_agent,
+    search_market_offers,
+)
 
 class MultiAgentCoordinator:
     def __init__(self):
@@ -20,16 +26,23 @@ class MultiAgentCoordinator:
     def handle_query(self, query: str = "", image_path: str | None = None, user_id: str | None = None):
         stored_profile = get_user_profile(user_id) if user_id else None
         parsed_profile = self.intent_agent.parse_intent(query) if query else {}
-        user_profile = merge_profiles(stored_profile, parsed_profile)
+        user_profile = normalize_intent_profile(
+            merge_profiles(stored_profile, parsed_profile),
+            raw_query=query,
+        )
 
         if image_path:
-            recommended = search_products_by_image(self.image_agent, image_path)
+            recommended = normalize_pipeline_products(
+                search_products_by_image(self.image_agent, image_path),
+                stage="recommended",
+            )
             for product in recommended:
-                product.setdefault("reason", "Image-based fallback recommendation")
+                if not product.get("reason"):
+                    product["reason"] = "Image-based fallback recommendation"
         else:
-            recommended = self.recommend_agent.recommend(query, user_profile)
+            recommended = recommend_with_agent(self.recommend_agent, query, user_profile=user_profile)
 
-        searched = search_market_offers(recommended, user_profile=user_profile)
+        searched = search_market_offers(recommended, user_profile=user_profile, agent=self.search_agent)
         priced = compare_prices(searched, user_profile=user_profile)
         stocked = apply_inventory_rules(priced, user_profile=user_profile)
 
@@ -44,24 +57,7 @@ class MultiAgentCoordinator:
         # 5️⃣ 保证前端安全字段
         safe_products = []
         for p in unique_results:
-            safe_products.append({
-                "id": p.get("id"),
-                "name": p.get("name"),
-                "brand": p.get("brand"),
-                "category": p.get("category"),
-                "subcategory": p.get("subcategory"),
-                "rating": p.get("rating"),
-                "price": p.get("price"),
-                "monthly_sales": p.get("monthly_sales"),
-                "promotion_tag": p.get("promotion_tag"),
-                "inventory_total": p.get("inventory_total"),
-                "reason": p.get("reason", ""),
-                "match_score": p.get("match_score"),
-                "matched_features": p.get("matched_features", {}),
-                "best_offer": p.get("best_offer"),
-                "available": p.get("available", []),
-                "search_results": p.get("search_results", [])
-            })
+            safe_products.append(build_safe_product_payload(p))
 
         return safe_products
 

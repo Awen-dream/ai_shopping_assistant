@@ -1,12 +1,13 @@
-from ...agents.recommendation_agent import RecommendationAgent
-from ...agents.search_agent import SearchAgent
-from .service import create_recommendation_agent, create_search_agent, recommend_products, search_market_offers
+from .model import (
+    ensure_query_category,
+    hybrid_recall_candidates,
+    materialize_recommendation_results,
+    recommend_products_with_components,
+)
 
 __all__ = [
-    "RecommendationAgent",
-    "SearchAgent",
-    "create_recommendation_agent",
-    "create_search_agent",
-    "recommend_products",
-    "search_market_offers",
+    "ensure_query_category",
+    "hybrid_recall_candidates",
+    "materialize_recommendation_results",
+    "recommend_products_with_components",
 ]

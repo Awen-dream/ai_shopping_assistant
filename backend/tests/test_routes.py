@@ -79,6 +79,8 @@ def test_stage3_price_and_inventory_fields_are_exposed():
     assert "purchase_limit" in best_offer
     assert "strategy_tags" in best_offer
     assert "merchant_type" in best_offer
+    assert payload["results"][0]["pipeline"]["contract_version"] == "stage3.v1"
+    assert payload["results"][0]["pipeline"]["stage"] == "inventory_ready"
 
 
 def test_commute_headphones_query_returns_fast_delivery_offer():

@@ -1,4 +1,3 @@
-from ...agents.intent_agent import IntentAgent
 from .model import (
     BRAND_KEYWORDS,
     CATEGORY_KEYWORDS,
@@ -23,7 +22,6 @@ from .model import (
     normalize_intent,
     parse_rule_based_intent,
 )
-from .service import create_intent_agent, parse_query_intent
 
 __all__ = [
     "BRAND_KEYWORDS",
@@ -32,12 +30,9 @@ __all__ = [
     "FEATURE_KEYWORDS",
     "FULFILLMENT_PREFERENCE_KEYWORDS",
     "INTEREST_KEYWORDS",
-    "IntentAgent",
     "SCENARIO_KEYWORDS",
     "SORT_PREFERENCE_KEYWORDS",
     "URGENCY_KEYWORDS",
-    "create_intent_agent",
-    "parse_query_intent",
     "clean_json",
     "extract_brands",
     "extract_budget_range",

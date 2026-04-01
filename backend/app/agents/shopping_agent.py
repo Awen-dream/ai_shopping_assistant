@@ -1,4 +1,4 @@
-from app.domains.recommendation import RecommendationAgent
+from app.agents.recommendation_agent import RecommendationAgent
 
 
 class ShoppingAgent:
